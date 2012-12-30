@@ -1,0 +1,39 @@
+<html>
+<head>
+    <title>CompareRDBMS - Compare Type Details</title>
+    <link rel="stylesheet" type="text/css" href="static/default.css">
+</head>
+<body>
+
+<h1>CompareRDBMS</h1>
+<!-- tmpl_loop name=type_row -->
+<h2>Type Details for <!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</h2>
+<!-- tmpl_if name=has_match -->
+<table>
+    <thead>
+        <tr>
+            <th>Detail</th>
+            <!-- tmpl_loop name=db_row -->
+            <th colspan="<!-- tmpl_var name=colspan -->"><!-- tmpl_var name=db --></th>
+            <!-- /tmpl_loop -->
+        </tr>
+    </thead>
+    <tbody>
+        <!-- tmpl_loop name=detail_row -->
+        <tr class="<!-- tmpl_var name=class -->">
+            <th><!-- tmpl_var name=name --></a></th>
+            <!-- tmpl_loop name=detail_list -->
+            <td><!-- tmpl_var name=value --></td>
+            <!-- /tmpl_loop -->
+        </tr>
+        <!-- /tmpl_loop -->
+    </tbody>
+</table>
+<!-- tmpl_else -->
+<p>This type is not supported by any of the configured RDBMSs</p>
+<!-- /tmpl_if -->
+<!-- /tmpl_loop -->
+<p>Please return to the <a href="compare.cgi">Home Page</a></p>
+
+</body>
+</html>

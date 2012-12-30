@@ -1,0 +1,26 @@
+<html>
+<head>
+    <title>CompareRDBMS - Home</title>
+</head>
+<body>
+
+<h1>CompareRDBMS</h1>
+<h2>Available DB drivers</h2>
+<p>(Note: the existence of a driver does not indicate the existence of a DBMS)</p>
+<ul>
+    <!-- tmpl_loop name=driver_list -->
+    <li>
+        <a href="compare.cgi?rm=dbms_config&driver=<!-- tmpl_var name=driver_name -->"><!-- tmpl_var name=driver_name --></a> <!-- tmpl_if name=has_config -->(configured)<!-- /tmpl_if -->
+    </li>
+    <!-- /tmpl_loop -->
+</ul>
+<p>Select a driver above to configure a database connection</p>
+<h2>Comparisons</h2>
+<p><a href="compare.cgi?rm=compare_types">Types</a></p>
+<p><a href="compare.cgi?rm=compare_type_details">Type Details</a></p>
+
+<h2>Information</h2>
+<p><a href="compare.cgi?rm=type_list">Recognised Types</a></p>
+
+</body>
+</html>

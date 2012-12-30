@@ -1,0 +1,62 @@
+<html>
+<head>
+    <title>CompareRDBMS - Config</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Ajax call to DB config test function
+            $('#test_btn').click( function () {
+                $('#test_results').html('<img src="http://img.cdn.tl/loading51.gif" width=30 height=30/>');
+                $.post(
+                    'compare.cgi',
+                    $('#config_form').serialize().replace('rm=dbms_save','rm=dbms_test'),
+                    function (response) {
+                        if ( response.success ) {
+                            // Set green colour
+                            $('#test_results').css('background-color', '#AAFFAA');
+                            $('#test_results').html('ok');
+                        }
+                        else {
+                            // Set red colour
+                            $('#test_results').css('background-color', '#FFAAAA');
+                            $('#test_results').html(response.error);
+                        }
+                    },
+                    'json'
+                );
+            });
+            // Reset test results on form change
+            $('#config_form').change( function () {
+                // Remove colour
+                $('test_results').html('');
+            });
+        });
+    </script>
+    <style>
+        #test_results {
+            display: inline-block;
+            height: 30px;
+            min-width: 30px;
+            text-align: center;
+            padding: 5px 5px 0px 5px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>CompareRDBMS</h1>
+<h2>Configuration for <!-- tmpl_var name=driver_name --></h2>
+<p>It's recommended that you test your configuration before saving</p>
+<form method="post" id="config_form">
+    <input type="hidden" name="rm" value="dbms_save"/>
+    <input type="hidden" name="driver" value="<!-- tmpl_var name=driver_name -->"/>
+    <label for="db">Database</label>: <input name="db" id="db" type="text" value="<!-- tmpl_var name=db -->"/><br/>
+    <label for="host">Host</label>: <input name="host" id="host" type="text" value="<!-- tmpl_var name=host -->"/><br/>
+    <label for="user">Username</label>: <input name="user" id="user" type="text" value="<!-- tmpl_var name=user -->"/><br/>
+    <label for="pass">Password</label>: <input name="pass" id="pass" type="text" value="<!-- tmpl_var name=pass -->"/><br/>
+    <a href="#test" id="test_btn">Test these settings</a> : <div id="test_results">not tested</div><br/>
+    <input type="submit" value="Save"/>
+</form>
+
+</body>
+</html>
