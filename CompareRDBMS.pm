@@ -62,7 +62,7 @@ sub home {
     foreach my $driver ( @driver_available ) {
         push( @driver_list, {
             driver_name => $driver,
-            has_config  => $dbconfig->{"${driver}_db"} ? 1 : 0,
+            has_config  => $dbconfig->{$driver}->{db} ? 1 : 0,
         });
     }
     $tmpl->param( driver_list => \@driver_list );
@@ -87,13 +87,28 @@ sub dbms_config {
     my $driver = $q->param('driver');
     # Load in currently configured DB settings
     my $dbconfig = _get_dbconfig( $driver );
+
+    my $dsn;
+    if ( $driver eq 'ODBC' ) {
+        $dsn = 'DBI:ODBC:Driver={SQL Server};Server={host};Database={db};';
+    }
+    elsif ( $driver eq 'Oracle' ) {
+        $dsn = "DBI:$driver:sid={db};host={host};";
+    }
+    else {
+        $dsn = "DBI:$driver:database={db};host={host};";
+    }
+
     # Populate the template
     $tmpl->param(
+        dsn_sample  => $dsn,
         driver_name => $driver,
-        db   => $dbconfig->{db},
-        host => $dbconfig->{host},
-        user => $dbconfig->{user},
-        pass => $dbconfig->{pass},
+        label => $dbconfig->{label},
+        db    => $dbconfig->{db},
+        host  => $dbconfig->{host},
+        user  => $dbconfig->{user},
+        pass  => $dbconfig->{pass},
+        dsn   => $dbconfig->{dsn},
     );
     return $tmpl->output();
 }
@@ -110,14 +125,8 @@ sub dbms_test {
     my $self = shift;
     # Get the query object
     my $q = $self->query();
-    # Create the DB DSN
-    my $dsn;
-    if ( $q->param('driver') eq 'ODBC' ) {
-        $dsn = 'DBI:ODBC:Driver={SQL Server};Server=' . $q->param('host') . ';Database=' . $q->param('db') . ';';
-    }
-    else {
-        $dsn = 'DBI:' . $q->param('driver') . ':database=' . $q->param('db') . ';host=' . $q->param('host') . ';';
-    }
+    # Get the DB DSN
+    my $dsn = $q->param('dsn');
 
     # Build data structure for return as JSON
     my %return = (
@@ -148,13 +157,17 @@ sub dbms_save {
     my $q = $self->query();
     # Load, update, and save config
     my $dbconfig = _get_dbconfig();
-    $dbconfig->{ $q->param('driver') . '_db' }   = $q->param('db');
-    $dbconfig->{ $q->param('driver') . '_host' } = $q->param('host');
-    $dbconfig->{ $q->param('driver') . '_user' } = $q->param('user');
-    $dbconfig->{ $q->param('driver') . '_pass' } = $q->param('pass');
+    $dbconfig->{ $q->param('driver') }->{label} = $q->param('label');
+    $dbconfig->{ $q->param('driver') }->{db}    = $q->param('db');
+    $dbconfig->{ $q->param('driver') }->{host}  = $q->param('host');
+    $dbconfig->{ $q->param('driver') }->{user}  = $q->param('user');
+    $dbconfig->{ $q->param('driver') }->{pass}  = $q->param('pass');
+    $dbconfig->{ $q->param('driver') }->{dsn}   = $q->param('dsn');
     open( OUTF, '>db.config' );
-        foreach my $key ( sort keys %$dbconfig ) {
-            print OUTF "$key=$dbconfig->{$key}\n";
+        foreach my $driver ( sort keys %$dbconfig ) {
+            foreach my $key ( sort keys %{ $dbconfig->{$driver} } ) {
+                print OUTF "${driver}_$key=$dbconfig->{$driver}->{$key}\n";
+            }#foreach
         }#foreach
     close( OUTF );
     # Populate the template
@@ -206,22 +219,15 @@ sub compare_types {
     my $tmpl = $self->load_tmpl('compare_types.html', 'die_on_bad_params', 0);
     # Get list of configured databases
     my $dbconfig = _get_dbconfig();
-    my @db_list = map { $_ =~ /^(.+)_db$/ } grep { $_ =~ /^(.+)_db$/ } sort keys %$dbconfig;
+    my @db_list = sort keys %$dbconfig;
     my @db_row;
     my %db_types;
     foreach my $db ( @db_list ) {
         push( @db_row, {
-            db => $db,
+            db    => $db,
+            label => $dbconfig->{$db}->{label},
         });
-        # Create the DB DSN
-        my $dsn;
-        if ( $db eq 'ODBC' ) {
-            $dsn = qq~DBI:ODBC:Driver={SQL Server};Server=$dbconfig->{"${db}_host"};Database=$dbconfig->{"${db}_db"};~;
-        }
-        else {
-            $dsn = qq~DBI:$db:database=$dbconfig->{"${db}_db"};host=$dbconfig->{"${db}_host"};~;
-        }
-        my $dbh = DBI->connect( $dsn, $dbconfig->{"${db}_user"}, $dbconfig->{"${db}_pass"} );
+        my $dbh = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{user}, $dbconfig->{$db}->{pass} );
         # Compile all types
         my $type_info = $dbh->type_info_all();
         foreach my $type ( @$type_info[1..$#$type_info] ) {
@@ -283,7 +289,7 @@ sub compare_type_details {
         @db_list = ( $q->param('db') );
     }
     else {
-        @db_list = map { $_ =~ /^(.+)_db$/ } grep { $_ =~ /^(.+)_db$/ } sort keys %$dbconfig;
+        @db_list = sort keys %$dbconfig;
     }
     # Get the type code -> name
     my $type_name = _get_type_names();
@@ -328,14 +334,7 @@ sub compare_type_details {
         foreach my $db ( @db_list ) {
             unless ( $dbh_map{$db} ) {
                 # Create the DB DSN
-                my $dsn;
-                if ( $db eq 'ODBC' ) {
-                    $dsn = qq~DBI:ODBC:Driver={SQL Server};Server=$dbconfig->{"${db}_host"};Database=$dbconfig->{"${db}_db"};~;
-                }
-                else {
-                    $dsn = qq~DBI:$db:database=$dbconfig->{"${db}_db"};host=$dbconfig->{"${db}_host"};~;
-                }
-                $dbh_map{$db} = DBI->connect( $dsn, $dbconfig->{"${db}_user"}, $dbconfig->{"${db}_pass"} );
+                $dbh_map{$db} = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{user}, $dbconfig->{$db}->{pass} );
             }#unless
             # Get the matching types
             my @type_info = $dbh_map{$db}->type_info( $type );
@@ -349,7 +348,8 @@ sub compare_type_details {
             $match_count += $count;
             $count ||= 1;
             push( @db_row, {
-                db => $db,
+                db      => $db,
+                label   => $dbconfig->{$db}->{label},
                 colspan => $count,
             });
         }#foreach
@@ -417,14 +417,18 @@ Returns a hash for the database configuration.
 sub _get_dbconfig {
     my ( $driver ) = @_;
     my %DBCONFIG;
-    open( INF, 'db.config' );
+    open( INF, 'db.config' ) || return {};
         while ( <INF> ) {
             chomp( $_ );
             my ( $key, $value ) = split( /=/, $_, 2 );
             if ( $driver ) {
                 next unless $key =~ s/^${driver}_//;
+                $DBCONFIG{$key} = $value;
             }
-            $DBCONFIG{$key} = $value;
+            else {
+                my ( $driver, $key ) = split( /_/, $key, 2 );
+                $DBCONFIG{$driver}->{$key} = $value;
+            }
         }#while
     close( INF );
     return \%DBCONFIG;
@@ -447,6 +451,13 @@ sub _get_type_names {
     }
     return \%type_name;
 }
+
+
+=head1 CAVEATS
+
+Currently only one RDBMS connection can be configured per driver.
+
+=cut
 
 
 1;

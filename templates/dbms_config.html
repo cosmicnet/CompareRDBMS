@@ -30,6 +30,13 @@
                 // Remove colour
                 $('test_results').html('');
             });
+            
+            var dsn_sample = "<!-- tmpl_var name=dsn_sample -->";
+            // Generate a sample dsn
+            $('#dsn_btn').click( function () {
+                var dsn = dsn_sample.replace( '{db}', $('#db').val() ).replace( '{host}', $('#host').val() );
+                $('#dsn').val( dsn );
+            });
         });
     </script>
     <style>
@@ -50,10 +57,12 @@
 <form method="post" id="config_form">
     <input type="hidden" name="rm" value="dbms_save"/>
     <input type="hidden" name="driver" value="<!-- tmpl_var name=driver_name -->"/>
+    <label for="label">Label</label>: <input name="label" id="label" type="text" value="<!-- tmpl_var name=label -->"/><br/>
     <label for="db">Database</label>: <input name="db" id="db" type="text" value="<!-- tmpl_var name=db -->"/><br/>
     <label for="host">Host</label>: <input name="host" id="host" type="text" value="<!-- tmpl_var name=host -->"/><br/>
     <label for="user">Username</label>: <input name="user" id="user" type="text" value="<!-- tmpl_var name=user -->"/><br/>
     <label for="pass">Password</label>: <input name="pass" id="pass" type="text" value="<!-- tmpl_var name=pass -->"/><br/>
+    <label for="dsn">DSN</label>: <input name="dsn" id="dsn" type="text" value="<!-- tmpl_var name=dsn -->"/> <a href="#dsn" id="dsn_btn">generate</a><br/>
     <a href="#test" id="test_btn">Test these settings</a> : <div id="test_results">not tested</div><br/>
     <input type="submit" value="Save"/>
 </form>
