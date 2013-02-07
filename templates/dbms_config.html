@@ -58,6 +58,13 @@
     <input type="hidden" name="rm" value="dbms_save"/>
     <input type="hidden" name="driver" value="<!-- tmpl_var name=driver_name -->"/>
     <label for="label">Label</label>: <input name="label" id="label" type="text" value="<!-- tmpl_var name=label -->"/><br/>
+    <label for="profile">Profile</label>:
+    <select name="profile" id="profile">
+        <option value="">None</option>
+        <!-- tmpl_loop name=profile_list -->
+        <option value="<!-- tmpl_var name=uid -->" <!-- tmpl_var name=selected -->><!-- tmpl_var name=label --></option>
+        <!-- /tmpl_loop -->
+    </select><br/>
     <label for="db">Database</label>: <input name="db" id="db" type="text" value="<!-- tmpl_var name=db -->"/><br/>
     <label for="host">Host</label>: <input name="host" id="host" type="text" value="<!-- tmpl_var name=host -->"/><br/>
     <label for="user">Username</label>: <input name="user" id="user" type="text" value="<!-- tmpl_var name=user -->"/><br/>

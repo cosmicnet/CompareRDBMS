@@ -17,8 +17,9 @@ CompareRDBMS - A tool for comparing various RDBMSs
 use base 'CGI::Application';
 use JSON;
 use DBI;
-use DBD::mysql;
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
+
 use strict;
 use warnings;
 
@@ -32,9 +33,15 @@ sub setup {
         dbms_config          => 'dbms_config',
         dbms_test            => 'dbms_test',
         dbms_save            => 'dbms_save',
-        type_list            => 'type_list',
-        compare_types        => 'compare_types',
-        compare_type_details => 'compare_type_details',
+        profile_config       => 'profile_config',
+        profile_save         => 'profile_save',
+        driver_type_list     => 'driver_type_list',
+        compare_driver_types         => 'compare_driver_types',
+        compare_driver_type_details  => 'compare_driver_type_details',
+        compare_profile_types        => 'compare_profile_types',
+        compare_profile_type_details => 'compare_profile_type_details',
+        compare_mixed_types          => 'compare_mixed_types',
+        compare_mixed_type_details   => 'compare_mixed_type_details',
     );
 }
 
@@ -57,7 +64,11 @@ sub home {
     my @driver_available = DBI->available_drivers(1);
     # Load in currently configured DB settings
     my $dbconfig = _get_dbconfig();
-    # Build data structure for template
+    # Load in currently configured profiles
+    my $profile_available = _get_profile();
+    
+    ## Build data structures for template
+    # Driver list
     my @driver_list;
     foreach my $driver ( @driver_available ) {
         push( @driver_list, {
@@ -65,7 +76,20 @@ sub home {
             has_config  => $dbconfig->{$driver}->{db} ? 1 : 0,
         });
     }
-    $tmpl->param( driver_list => \@driver_list );
+    # Profile list
+    my @profile_list;
+    foreach my $profile ( @{ $profile_available } ) {
+        push( @profile_list, {
+            uid   => $profile->{uid},
+            label => $profile->{label},
+        });
+    }
+    # Populate template
+    $tmpl->param(
+        driver_list    => \@driver_list,
+        profile_list   => \@profile_list,
+        profiles_exist => scalar @profile_list,
+    );
     return $tmpl->output();
 }
 
@@ -87,7 +111,20 @@ sub dbms_config {
     my $driver = $q->param('driver');
     # Load in currently configured DB settings
     my $dbconfig = _get_dbconfig( $driver );
+    # Load in profiles valid for this driver settings
+    my $profile_available = _get_profile( driver => $driver );
 
+    ## Build data structures for template
+    # Profile list
+    my @profile_list;
+    foreach my $profile ( @{ $profile_available } ) {
+        push( @profile_list, {
+            uid   => $profile->{uid},
+            label => $profile->{label},
+            selected => $dbconfig->{profile} eq $profile->{uid} ? 'selected="selected"' : '',
+        });
+    }
+    # DSN templates
     my $dsn;
     if ( $driver eq 'ODBC' ) {
         $dsn = 'DBI:ODBC:Driver={SQL Server};Server={host};Database={db};';
@@ -101,8 +138,9 @@ sub dbms_config {
 
     # Populate the template
     $tmpl->param(
-        dsn_sample  => $dsn,
-        driver_name => $driver,
+        dsn_sample   => $dsn,
+        driver_name  => $driver,
+        profile_list => \@profile_list,
         label => $dbconfig->{label},
         db    => $dbconfig->{db},
         host  => $dbconfig->{host},
@@ -145,7 +183,7 @@ sub dbms_test {
 
 =head2 dbms_save
 
-Saves the DB configuration and displayed success page.
+Saves the DB configuration and displays success page.
 
 =cut
 
@@ -157,12 +195,13 @@ sub dbms_save {
     my $q = $self->query();
     # Load, update, and save config
     my $dbconfig = _get_dbconfig();
-    $dbconfig->{ $q->param('driver') }->{label} = $q->param('label');
-    $dbconfig->{ $q->param('driver') }->{db}    = $q->param('db');
-    $dbconfig->{ $q->param('driver') }->{host}  = $q->param('host');
-    $dbconfig->{ $q->param('driver') }->{user}  = $q->param('user');
-    $dbconfig->{ $q->param('driver') }->{pass}  = $q->param('pass');
-    $dbconfig->{ $q->param('driver') }->{dsn}   = $q->param('dsn');
+    $dbconfig->{ $q->param('driver') }->{label}   = $q->param('label');
+    $dbconfig->{ $q->param('driver') }->{db}      = $q->param('db');
+    $dbconfig->{ $q->param('driver') }->{host}    = $q->param('host');
+    $dbconfig->{ $q->param('driver') }->{user}    = $q->param('user');
+    $dbconfig->{ $q->param('driver') }->{pass}    = $q->param('pass');
+    $dbconfig->{ $q->param('driver') }->{dsn}     = $q->param('dsn');
+    $dbconfig->{ $q->param('driver') }->{profile} = $q->param('profile');
     open( OUTF, '>db.config' );
         foreach my $driver ( sort keys %$dbconfig ) {
             foreach my $key ( sort keys %{ $dbconfig->{$driver} } ) {
@@ -178,16 +217,93 @@ sub dbms_save {
 }
 
 
-=head2 type_list
+=head2 profile_config
+
+This is the page is where a profile can be configured.
+
+=cut
+
+sub profile_config {
+    my $self = shift;
+    # Load page template
+    my $tmpl = $self->load_tmpl('profile_config.html', 'die_on_bad_params', 0);
+    # Get the query object
+    my $q = $self->query();
+    my $profile_uid = $q->param('profile');
+    # Load in currently configured profile settings
+    my $profile = _get_profile( uid => $profile_uid ) if $profile_uid;
+    # Get list of available drivers
+    my @driver_available = DBI->available_drivers(1);
+    
+    ## Build data structures for template
+    # Driver list
+    my @driver_list;
+    foreach my $driver ( @driver_available ) {
+        push( @driver_list, {
+            driver  => $driver,
+            checked => _any( $profile->{driver}, $driver ) ? 'checked="checked"' : '',
+        });
+    }
+    # Populate the template
+    $tmpl->param(
+        %{ $profile },
+        driver_list => \@driver_list,
+    );
+
+    return $tmpl->output();
+}
+
+
+=head2 profile_save
+
+Saves the profile configuration and displays success page.
+
+=cut
+
+sub profile_save {
+    my $self = shift;
+    # Load page template
+    my $tmpl = $self->load_tmpl('profile_save.html', 'die_on_bad_params', 0);
+    # Get the query object
+    my $q = $self->query();
+    my $old_uid = $q->param('old_uid');
+    # Load, update, and save config
+    my $profile = _get_profile( uid => $old_uid ) if $old_uid;
+    $profile->{uid} = $q->param('uid');
+    $profile->{label} = $q->param('label');
+    $profile->{rdbms} = $q->param('rdbms');
+    $profile->{version} = $q->param('version');
+    # The list of drivers must be formatted as an array reference
+    my @driver_list = $q->param('driver');
+    $profile->{driver} = \@driver_list;
+    # Write out to file
+    open( OUTF, ">profiles/$profile->{uid}.config" );
+        print OUTF Data::Dumper->Dump([$profile], [qw(profile)]);
+    close( OUTF );
+
+    # If the profile is changing uid, delete the old profile
+    if ( $old_uid && $old_uid ne $profile->{uid} ) {
+        unlink( "profiles/$old_uid.config" );
+    }
+    
+    # Populate the template
+    $tmpl->param(
+        profile_name => $profile->{label},
+    );
+    return $tmpl->output();
+}
+
+
+=head2 driver_type_list
 
 Displays a list of all the recognised types.
 
 =cut
 
-sub type_list {
+sub driver_type_list {
     my $self = shift;
     # Load page template
-    my $tmpl = $self->load_tmpl('type_list.html', 'die_on_bad_params', 0);
+    my $tmpl = $self->load_tmpl('driver_type_list.html', 'die_on_bad_params', 0);
     # Get list of types
     my @type_list;
     # Get the type code -> name
@@ -206,17 +322,17 @@ sub type_list {
 }
 
 
-=head2 compare_types
+=head2 compare_driver_types
 
 Displays a table for all the types supported by the configured databases.
 The databases local name for the type is given.
 
 =cut
 
-sub compare_types {
+sub compare_driver_types {
     my $self = shift;
     # Load page template
-    my $tmpl = $self->load_tmpl('compare_types.html', 'die_on_bad_params', 0);
+    my $tmpl = $self->load_tmpl('compare_driver_types.html', 'die_on_bad_params', 0);
     # Get list of configured databases
     my $dbconfig = _get_dbconfig();
     my @db_list = sort keys %$dbconfig;
@@ -268,17 +384,17 @@ sub compare_types {
 }
 
 
-=head2 compare_type_details
+=head2 compare_driver_type_details
 
 Displays a table for the chosen types detailed information for the configured
 RDBMS's matching types.
 
 =cut
 
-sub compare_type_details {
+sub compare_driver_type_details {
     my $self = shift;
     # Load page template
-    my $tmpl = $self->load_tmpl('compare_type_details.html', 'die_on_bad_params', 0);
+    my $tmpl = $self->load_tmpl('compare_driver_type_details.html', 'die_on_bad_params', 0);
     # Get the query object
     my $q = $self->query();
     # Get list of configured databases
@@ -435,6 +551,43 @@ sub _get_dbconfig {
 }
 
 
+=head2 _get_profile
+
+Returns a list of profiles or a single hash for the profile configuration.
+Can be passed a profile uid to return a single profile, or a driver for a
+list of profiles that are valid for that driver.
+
+=cut
+
+sub _get_profile {
+    my %param = @_;
+    my $profile;
+    # Do we want just a single profile?
+    if ( $param{uid} ) {
+        $profile = do "profiles/$param{uid}.config";
+    }
+    else {
+        $profile = [];
+        opendir( DIR, 'profiles' ) || die( 'Cannot open profiles directory' );
+            while ( readdir( DIR ) ) {
+                # Skip hidden files and folders
+                next if $_ =~ /^\./;
+                # Skip if it isn't a config file
+                next unless $_ =~ /\.config$/;
+                # Add profile settings to list
+                my $profile_hash = do "profiles/$_";
+                # See if we are only returning profiles for a certain driver
+                if ( $param{driver} ) {
+                    next unless _any( $profile_hash->{driver}, $param{driver} );
+                }
+                push( @$profile, $profile_hash );
+            }#while
+        closedir( DIR );
+    }#else
+    return $profile;
+}
+
+
 =head2 _get_type_name
 
 Returns a hash mapping the type code numbers to their names.
@@ -446,12 +599,27 @@ sub _get_type_names {
     {
         no strict 'refs';
         foreach (@{ $DBI::EXPORT_TAGS{sql_types} }) {
+            next if $_ eq 'SQL_ALL_TYPES' || $_ !~ /^SQL_/;
             $type_name{ &{"DBI::$_"} } = $_;
         }
     }
     return \%type_name;
 }
 
+
+=head2 _any
+
+Returns true or false dependent of whether the item exists in the array.
+
+=cut
+
+sub _any {
+    my ( $list, $item ) = @_;
+    foreach ( @$list ) {
+        return 1 if $_ eq $item;
+    }
+    return 0;
+}
 
 =head1 CAVEATS
 

@@ -5,6 +5,7 @@
 <body>
 
 <h1>CompareRDBMS</h1>
+
 <h2>Available DB drivers</h2>
 <p>(Note: the existence of a driver does not indicate the existence of a DBMS)</p>
 <ul>
@@ -15,12 +16,30 @@
     <!-- /tmpl_loop -->
 </ul>
 <p>Select a driver above to configure a database connection</p>
+
+<h2>Available DB profiles</h2>
+<p>(Note: the existence of a profile does not indicate the existence of a DBMS)</p>
+<ul>
+    <!-- tmpl_loop name=profile_list -->
+    <li>
+        <a href="compare.cgi?rm=profile_config&profile=<!-- tmpl_var name=uid -->"><!-- tmpl_var name=label --></a>
+    </li>
+    <!-- /tmpl_loop -->
+</ul>
+<!-- tmpl_if name=profiles_exist -->
+<p>Select a profile above to edit it's configuration</p>
+<!-- tmpl_else -->
+<p>No profiles exist</p>
+<!-- /tmpl_if -->
+<p><a href="compare.cgi?rm=profile_config">Create new profile</a></p>
+
 <h2>Comparisons</h2>
-<p><a href="compare.cgi?rm=compare_types">Types</a></p>
-<p><a href="compare.cgi?rm=compare_type_details">Type Details</a></p>
+<h3>Driver Defined</h3>
+<p><a href="compare.cgi?rm=compare_driver_types">Types</a></p>
+<p><a href="compare.cgi?rm=compare_driver_type_details">Type Details</a></p>
 
 <h2>Information</h2>
-<p><a href="compare.cgi?rm=type_list">Recognised Types</a></p>
+<p><a href="compare.cgi?rm=driver_type_list">Driver Recognised Types</a></p>
 
 </body>
 </html>
