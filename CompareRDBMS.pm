@@ -171,8 +171,11 @@ sub dbms_test {
         success => 1,
     );
     # Test the DB config
-    unless ( DBI->connect($dsn, $q->param('user'), $q->param('pass'),
+    if ( my $dbh = DBI->connect($dsn, $q->param('user'), $q->param('pass'),
         { RaiseError => 0, PrintError => 0, PrintWarn => 0, AutoCommit => 1 }) ) {
+        $dbh->disconnect;
+    }
+    else {
         $return{success} = 0;
         $return{error} = $DBI::errstr;
     }
@@ -354,6 +357,7 @@ sub compare_driver_types {
                 $db_types{ $type->[1] }->{$db} = qq~<a href="compare.cgi?rm=compare_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
             }
         }
+        $dbh->disconnect;
     }#foreach
 
     # Get the type code -> name
