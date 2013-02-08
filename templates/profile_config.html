@@ -1,0 +1,26 @@
+<html>
+<head>
+    <title>CompareRDBMS - Profile Settings</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+</head>
+<body>
+
+<h1>CompareRDBMS</h1>
+<h2>Settings for profile <!-- tmpl_var name=label --></h2>
+<p>It's recommended that you test your configuration before saving</p>
+<form method="post" id="config_form">
+    <input type="hidden" name="rm" value="profile_save"/>
+    <input type="hidden" name="old_uid" value="<!-- tmpl_var name=uid -->"/>
+    <label for="uid">ID</label>: <input name="uid" id="uid" type="text" value="<!-- tmpl_var name=uid -->"/><br/>
+    <label for="label">Label</label>: <input name="label" id="label" type="text" value="<!-- tmpl_var name=label -->"/><br/>
+    <label for="rdbms">RDBMS</label>: <input name="rdbms" id="rdbms" type="text" value="<!-- tmpl_var name=rdbms -->"/><br/>
+    <label for="version">Version</label>: <input name="version" id="version" type="text" value="<!-- tmpl_var name=version -->"/><br/>
+    <label for="driver">Drivers</label>:<br/>
+    <!-- tmpl_loop driver_list -->
+        <input name="driver" id="driver" type="checkbox" value="<!-- tmpl_var name=driver -->" <!-- tmpl_var name=checked -->/> <!-- tmpl_var name=driver --><br/>
+    <!-- /tmpl_loop -->
+    <input type="submit" value="Save"/>
+</form>
+
+</body>
+</html>
