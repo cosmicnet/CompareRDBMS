@@ -1,25 +1,25 @@
 <html>
 <head>
-    <title>CompareRDBMS - Compare Types</title>
+    <title>CompareRDBMS - Compare Driver Types</title>
     <link rel="stylesheet" type="text/css" href="static/default.css">
 </head>
 <body>
 
 <h1>CompareRDBMS</h1>
-<h2>Type support</h2>
+<h2>Driver Type support</h2>
 <table>
     <thead>
         <tr>
-            <th>Type</th>
+            <th>ODBC Type</th>
             <!-- tmpl_loop name=db_list -->
-            <th><a href="compare.cgi?rm=compare_type_details&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=label --></a></th>
+            <th><a href="compare.cgi?rm=compare_driver_type_details&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=label --></a></th>
             <!-- /tmpl_loop -->
         </tr>
     </thead>
     <tbody>
         <!-- tmpl_loop name=type_row -->
         <tr>
-            <th><a href="compare.cgi?rm=compare_type_details&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
+            <th><a href="compare.cgi?rm=compare_driver_type_details&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
             <!-- tmpl_loop name=support_list -->
             <td><!-- tmpl_var name=supported --></td>
             <!-- /tmpl_loop -->
