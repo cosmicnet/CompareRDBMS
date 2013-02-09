@@ -9,7 +9,7 @@
 <h2>Driver Type support</h2>
 <table>
     <thead>
-        <tr>
+        <tr class="heading">
             <th>ODBC Type</th>
             <!-- tmpl_loop name=db_list -->
             <th><a href="compare.cgi?rm=compare_driver_type_details&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=label --></a></th>
@@ -17,14 +17,24 @@
         </tr>
     </thead>
     <tbody>
-        <!-- tmpl_loop name=type_row -->
-        <tr>
-            <th><a href="compare.cgi?rm=compare_driver_type_details&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
-            <!-- tmpl_loop name=support_list -->
-            <td><!-- tmpl_var name=supported --></td>
-            <!-- /tmpl_loop -->
+    <!-- tmpl_loop name=collective_row -->
+        <tr class="collective">
+            <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->"><!-- tmpl_var name=collective_label --></a></th>
         </tr>
+        <!-- tmpl_loop name=subtype_row -->
+            <tr class="subtype">
+                <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->"><!-- tmpl_var name=subtype_label --></a></th>
+            </tr>
+            <!-- tmpl_loop name=type_row -->
+            <tr>
+                <th><a href="compare.cgi?rm=compare_driver_type_details&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
+                <!-- tmpl_loop name=support_list -->
+                <td><!-- tmpl_var name=supported --></td>
+                <!-- /tmpl_loop -->
+            </tr>
+            <!-- /tmpl_loop -->
         <!-- /tmpl_loop -->
+    <!-- /tmpl_loop -->
     </tbody>
 </table>
 <p>Please return to the <a href="compare.cgi">Home Page</a></p>

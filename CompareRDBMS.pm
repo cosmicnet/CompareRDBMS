@@ -16,6 +16,7 @@ CompareRDBMS - A tool for comparing various RDBMSs
 
 use base 'CGI::Application';
 use JSON;
+use Tie::IxHash;
 use DBI;
 use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
@@ -351,10 +352,10 @@ sub compare_driver_types {
         my $type_info = $dbh->type_info_all();
         foreach my $type ( @$type_info[1..$#$type_info] ) {
             if ( defined $db_types{ $type->[1] }->{$db} ) {
-                $db_types{ $type->[1] }->{$db} .= qq~, <a href="compare.cgi?rm=compare_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
+                $db_types{ $type->[1] }->{$db} .= qq~, <a href="compare.cgi?rm=compare_driver_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
             }
             else {
-                $db_types{ $type->[1] }->{$db} = qq~<a href="compare.cgi?rm=compare_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
+                $db_types{ $type->[1] }->{$db} = qq~<a href="compare.cgi?rm=compare_driver_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
             }
         }
         $dbh->disconnect;
@@ -362,27 +363,52 @@ sub compare_driver_types {
 
     # Get the type code -> name
     my $type_name = _get_type_names();
+    # Get the collective names of types
+    my $collective = _get_type_collective();
 
-    # Prepare types for templates
-    my @type_row;
-    foreach my $type ( sort { $a <=> $b } keys %db_types ) {
-        my @support_list;
-        foreach my $db ( @db_list ) {
-            push( @support_list, {
-                supported => $db_types{$type}->{$db} || '',
+    ## Prepare types for templates
+    # Start with collective type names
+    my @collective_row;
+    while ( my ( $collective_id, $collective_info ) = each %$collective ) {
+        # Then sub types
+        my @subtype_row;
+        while ( my ( $subtype_id, $subtype_info ) = each %{ $collective_info->{sub_type} } ) {
+            # Finally types
+            my @type_row;
+            foreach my $type ( @{ $subtype_info->{type} } ) {
+                # With database type support
+                my @support_list;
+                foreach my $db ( @db_list ) {
+                    push( @support_list, {
+                        supported => $db_types{$type}->{$db} || '',
+                    });
+                }
+                push( @type_row, {
+                    type_code => $type,
+                    type_name => $type_name->{$type},
+                    support_list => \@support_list,
+                });
+            }#foreach
+            push( @subtype_row, {
+                collective_id => $collective_id,
+                subtype_id    => $subtype_id,
+                subtype_label => $subtype_info->{label},
+                colspan       => scalar @db_list + 1,
+                type_row      => \@type_row,
             });
         }
-        push( @type_row, {
-            type_code => $type,
-            type_name => $type_name->{$type},
-            support_list => \@support_list,
+        push( @collective_row, {
+            collective_id    => $collective_id,
+            collective_label => $collective_info->{label},
+            colspan          => scalar @db_list + 1,
+            subtype_row      => \@subtype_row,
         });
-    }
+    }#foreach
 
     # Populate template
     $tmpl->param(
-        db_list  => \@db_row,
-        type_row => \@type_row,
+        db_list        => \@db_row,
+        collective_row => \@collective_row,
     );
     return $tmpl->output();
 }
@@ -608,6 +634,102 @@ sub _get_type_names {
         }
     }
     return \%type_name;
+}
+
+
+=head2 _get_type_collective
+
+This function returns data structures for data type codes grouped into collective
+types and sub types, with associated group labels.
+
+Returns:
+
+No arguments passed: An ordered hash of types divided into collective types and an ordered hash of sub types.
+
+A collective type passed: A hash of the collective types label and ordered hash of sub types.
+
+A collective type, and sub type passed: A hash of the collectives sub types label, and array of type codes.
+
+=cut
+
+sub _get_type_collective {
+    my ( $collective, $sub_type ) = @_;
+    tie my %numeric, 'Tie::IxHash';
+    %numeric = (
+        exact => {
+            label => 'Exact',
+            type  => [-6, 5, 4, -5, 2, 3],
+        },
+        approximate => {
+            label => 'Approximate',
+            type  => [7, 6, 8],
+        },
+    );
+    tie my %string, 'Tie::IxHash';
+    %string = (
+        character => {
+            label => 'Character',
+            type  => [1, -8, 12, -9, -1, -10, 40, 41],
+        },
+        binary => {
+            label => 'Binary',
+            type  => [-2, -3, -4, 30, 31],
+        },
+    );
+    tie my %datetime, 'Tie::IxHash';
+    %datetime = (
+        date => {
+            label => 'Date',
+            type  => [9, 91],
+        },
+        time => {
+            label => 'Time',
+            type  => [10, 92, 94],
+        },
+        timestamp => {
+            label => 'Timestamp',
+            type  => [11, 93, 95],
+        },
+        interval => {
+            label => 'Interval',
+            type  => [101..113],
+        },
+    );
+    tie my %misc, 'Tie::IxHash';
+    %misc = (
+        all => {
+            label => 'All',
+            type  => [-11, -7, 16..20, 50, 51, 55, 56],
+        },
+    );
+    tie my %collective_list, 'Tie::IxHash';
+    %collective_list = (
+        numeric => {
+            label    => 'Numeric Types',
+            sub_type => \%numeric,
+        },
+        string => {
+            label    => 'String Types',
+            sub_type => \%string,
+        },
+        datetime => {
+            label    => 'Datetime Types',
+            sub_type => \%datetime,
+        },
+        misc => {
+            label    => 'Miscellaneous Types',
+            sub_type => \%misc,
+        },
+    );
+    if ( $collective ) {
+        if ( $sub_type ) {
+            return $collective_list{$collective}->{sub_type}->{$sub_type};
+        }
+        else {
+            return $collective_list{$collective};
+        }
+    }
+    return \%collective_list;
 }
 
 
