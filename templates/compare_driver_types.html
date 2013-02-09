@@ -26,10 +26,14 @@
                 <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->"><!-- tmpl_var name=subtype_label --></a></th>
             </tr>
             <!-- tmpl_loop name=type_row -->
-            <tr>
-                <th><a href="compare.cgi?rm=compare_driver_type_details&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
-                <!-- tmpl_loop name=support_list -->
-                <td><!-- tmpl_var name=supported --></td>
+            <tr class="type">
+                <th><a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
+                <!-- tmpl_loop name=support_row -->
+                <td>
+                    <!-- tmpl_loop name=db_type_list -->
+                    <a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&type_name=<!-- tmpl_var name=type_name -->&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=type_name --></a>&nbsp;
+                    <!-- /tmpl_loop -->
+                </td>
                 <!-- /tmpl_loop -->
             </tr>
             <!-- /tmpl_loop -->

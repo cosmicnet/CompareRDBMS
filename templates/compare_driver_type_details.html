@@ -6,9 +6,15 @@
 <body>
 
 <h1>CompareRDBMS</h1>
-<!-- tmpl_loop name=type_row -->
-<h2>Driver Type Details for <!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</h2>
-<!-- tmpl_if name=has_match -->
+<h2>Driver Type Details</h2>
+
+<!-- tmpl_loop name=collective_row -->
+<h2><!-- tmpl_var name=collective_label --></h2>
+    <!-- tmpl_loop name=subtype_row -->
+<h3><!-- tmpl_var name=subtype_label --></h3>
+        <!-- tmpl_loop name=type_row -->
+<h4><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</h4>
+        <!-- tmpl_if name=has_match -->
 <table>
     <thead>
         <tr>
@@ -29,10 +35,13 @@
         <!-- /tmpl_loop -->
     </tbody>
 </table>
-<!-- tmpl_else -->
-<p>This type is not supported by any of the configured RDBMSs</p>
-<!-- /tmpl_if -->
+        <!-- tmpl_else -->
+<p>This type is not supported by any of selected RDBMSs</p>
+        <!-- /tmpl_if -->
+        <!-- /tmpl_loop -->
+    <!-- /tmpl_loop -->
 <!-- /tmpl_loop -->
+
 <p>Please return to the <a href="compare.cgi">Home Page</a></p>
 
 </body>

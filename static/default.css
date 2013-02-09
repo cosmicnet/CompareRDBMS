@@ -18,7 +18,6 @@ table th {
     font-size: 11px;
     padding-bottom: 4px;
     padding-top: 5px;
-    padding-left: 30px;
     text-align: left;
 }
 
@@ -55,4 +54,8 @@ table tr.row_b td {
     background-color: #a2c439;
     font-size: 12px;
     padding-left: 15px;
+}
+
+.type th {
+    padding-left: 30px;
 }

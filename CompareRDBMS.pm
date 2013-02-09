@@ -67,7 +67,7 @@ sub home {
     my $dbconfig = _get_dbconfig();
     # Load in currently configured profiles
     my $profile_available = _get_profile();
-    
+
     ## Build data structures for template
     # Driver list
     my @driver_list;
@@ -238,7 +238,7 @@ sub profile_config {
     my $profile = _get_profile( uid => $profile_uid ) if $profile_uid;
     # Get list of available drivers
     my @driver_available = DBI->available_drivers(1);
-    
+
     ## Build data structures for template
     # Driver list
     my @driver_list;
@@ -289,7 +289,7 @@ sub profile_save {
     if ( $old_uid && $old_uid ne $profile->{uid} ) {
         unlink( "profiles/$old_uid.config" );
     }
-    
+
     # Populate the template
     $tmpl->param(
         profile_name => $profile->{label},
@@ -351,12 +351,7 @@ sub compare_driver_types {
         # Compile all types
         my $type_info = $dbh->type_info_all();
         foreach my $type ( @$type_info[1..$#$type_info] ) {
-            if ( defined $db_types{ $type->[1] }->{$db} ) {
-                $db_types{ $type->[1] }->{$db} .= qq~, <a href="compare.cgi?rm=compare_driver_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
-            }
-            else {
-                $db_types{ $type->[1] }->{$db} = qq~<a href="compare.cgi?rm=compare_driver_type_details&type=$type->[1]&type_name=$type->[0]&db=$db">$type->[0]</a>~;
-            }
+            push( @{ $db_types{ $type->[1] }->{$db} }, $type->[0] );
         }
         $dbh->disconnect;
     }#foreach
@@ -377,18 +372,33 @@ sub compare_driver_types {
             my @type_row;
             foreach my $type ( @{ $subtype_info->{type} } ) {
                 # With database type support
-                my @support_list;
+                my @support_row;
                 foreach my $db ( @db_list ) {
-                    push( @support_list, {
-                        supported => $db_types{$type}->{$db} || '',
+                    my @db_type_list;
+                    # Loop the DB's type names
+                    foreach my $type_name ( @{ $db_types{$type}->{$db} } ) {
+                        push( @db_type_list, {
+                            collective_id => $collective_id,
+                            subtype_id    => $subtype_id,
+                            type_code     => $type,
+                            type_name     => $type_name,
+                            db            => $db,
+                        });
+                    }#foreach
+                    push( @support_row, {
+                        db_type_list => \@db_type_list,
                     });
-                }
+                }#foreach
+                # Add to type table row
                 push( @type_row, {
-                    type_code => $type,
-                    type_name => $type_name->{$type},
-                    support_list => \@support_list,
+                    collective_id => $collective_id,
+                    subtype_id    => $subtype_id,
+                    type_code     => $type,
+                    type_name     => $type_name->{$type},
+                    support_row   => \@support_row,
                 });
             }#foreach
+            # Add to sub type rows
             push( @subtype_row, {
                 collective_id => $collective_id,
                 subtype_id    => $subtype_id,
@@ -397,6 +407,7 @@ sub compare_driver_types {
                 type_row      => \@type_row,
             });
         }
+        # Add to collective rows
         push( @collective_row, {
             collective_id    => $collective_id,
             collective_label => $collective_info->{label},
@@ -437,16 +448,14 @@ sub compare_driver_type_details {
     else {
         @db_list = sort keys %$dbconfig;
     }
+    # Is this collective, subtype, or type specific?
+    my $collective_id = $q->param('collective');
+    my $subtype_id = $q->param('subtype');
+    my $type_code = $q->param('type');
     # Get the type code -> name
     my $type_name = _get_type_names();
-    # Is this type specific
-    my @type_list;
-    if ( defined $q->param('type') ) {
-        @type_list = ( $q->param('type') );
-    }
-    else {
-        @type_list = sort { $a <=> $b } keys %$type_name;
-    }
+    # Get the collective names of types
+    my $collective = _get_type_collective( $collective_id, $subtype_id );
 
     my %detail_map = (
         TYPE_NAME          =>  0,
@@ -470,83 +479,111 @@ sub compare_driver_type_details {
         INTERVAL_PRECISION => 18,
     );
 
-    # Gather type information    
-    my @type_row;
-    my %dbh_map;
-    foreach my $type ( @type_list ) {
-        my @db_row;
-        my %db_info;
-        my $match_count = 0;
-        foreach my $db ( @db_list ) {
-            unless ( $dbh_map{$db} ) {
-                # Create the DB DSN
-                $dbh_map{$db} = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{user}, $dbconfig->{$db}->{pass} );
-            }#unless
-            # Get the matching types
-            my @type_info = $dbh_map{$db}->type_info( $type );
-            if ( $q->param('type_name') ) {
-                $db_info{$db} = [ grep { $_->{TYPE_NAME} eq $q->param('type_name') } @type_info ];
-            }
-            else {
-                $db_info{$db} = \@type_info;
-            }
-            my $count = @type_info;
-            $match_count += $count;
-            $count ||= 1;
-            push( @db_row, {
-                db      => $db,
-                label   => $dbconfig->{$db}->{label},
-                colspan => $count,
-            });
-        }#foreach
-
-        # Make sure we have some matching types
-        if ( ! $match_count ) {
-            push( @type_row, {
-                type_name  => $type_name->{ $type },
-                type_code  => $type,
-                has_match  => 0,
-            });
-            next;
-        }
-
-        my @detail_row;
-        my $count = 0;
-        foreach my $detail ( sort { $detail_map{$a} <=> $detail_map{$b} } keys %detail_map ) {
-            my @detail_list;
-            foreach my $db ( @db_list ) {
-                if ( @{ $db_info{$db} } ) {
-                    foreach my $type_info ( @{ $db_info{$db} } ) {
-                        push( @detail_list, {
-                            value => $type_info->{ $detail },
-                        });
+    ## Prepare type details for templates
+    # Start with collective type names
+    my @collective_row;
+    while ( my ( $collective_id, $collective_info ) = each %$collective ) {
+        # Then sub types
+        my @subtype_row;
+        while ( my ( $subtype_id, $subtype_info ) = each %{ $collective_info->{sub_type} } ) {
+            # Finally types
+            my @type_row;
+            my %dbh_map;
+            # Either the subtype type list or a single type
+            my @type_list = $type_code ? ( $type_code ) : @{ $subtype_info->{type} };
+            foreach my $type ( @type_list ) {
+                my @db_row;
+                my %db_info;
+                my $match_count = 0;
+                # Loop through the driver database connections
+                foreach my $db ( @db_list ) {
+                    unless ( $dbh_map{$db} ) {
+                        # Create the DB DSN
+                        $dbh_map{$db} = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{user}, $dbconfig->{$db}->{pass} );
+                    }#unless
+                    # Get the matching types
+                    my @type_info = $dbh_map{$db}->type_info( $type );
+                    if ( $q->param('type_name') ) {
+                        $db_info{$db} = [ grep { $_->{TYPE_NAME} eq $q->param('type_name') } @type_info ];
                     }
-                }
-                else {
-                    push( @detail_list, {
-                        value => '',
+                    else {
+                        $db_info{$db} = \@type_info;
+                    }
+                    my $count = @type_info;
+                    $match_count += $count;
+                    $count ||= 1;
+                    push( @db_row, {
+                        db      => $db,
+                        label   => $dbconfig->{$db}->{label},
+                        colspan => $count,
                     });
+                }#foreach
+
+                # Make sure we have some matching types
+                if ( ! $match_count ) {
+                    push( @type_row, {
+                        type_name  => $type_name->{ $type },
+                        type_code  => $type,
+                        has_match  => 0,
+                    });
+                    next;
                 }
+
+                my @detail_row;
+                my $count = 0;
+                foreach my $detail ( sort { $detail_map{$a} <=> $detail_map{$b} } keys %detail_map ) {
+                    my @detail_list;
+                    foreach my $db ( @db_list ) {
+                        if ( @{ $db_info{$db} } ) {
+                            foreach my $type_info ( @{ $db_info{$db} } ) {
+                                push( @detail_list, {
+                                    value => $type_info->{ $detail },
+                                });
+                            }
+                        }
+                        else {
+                            push( @detail_list, {
+                                value => '',
+                            });
+                        }
+                    }#foreach
+                    $count ++;
+                    push( @detail_row, {
+                        name        => $detail,
+                        detail_list => \@detail_list,
+                        class       => $count % 2 ? 'row_a' : 'row_b',
+                    });
+                }#foreach
+                # Add to type row
+                push( @type_row, {
+                    type_name  => $type_name->{ $type },
+                    type_code  => $type,
+                    has_match  => 1,
+                    detail_row => \@detail_row,
+                    db_row     => \@db_row,
+                });
             }#foreach
-            $count ++;
-            push( @detail_row, {
-                name        => $detail,
-                detail_list => \@detail_list,
-                class       => $count % 2 ? 'row_a' : 'row_b',
+            # Add to subtype row
+            push( @subtype_row, {
+                collective_id => $collective_id,
+                subtype_id    => $subtype_id,
+                subtype_label => $subtype_info->{label},
+                colspan       => scalar @db_list + 1,
+                type_row      => \@type_row,
             });
-        }#foreach
-        push( @type_row, {
-            type_name  => $type_name->{ $type },
-            type_code  => $type,
-            has_match  => 1,
-            detail_row => \@detail_row,
-            db_row     => \@db_row,
+        }
+        # Add to collective row
+        push( @collective_row, {
+            collective_id    => $collective_id,
+            collective_label => $collective_info->{label},
+            colspan          => scalar @db_list + 1,
+            subtype_row      => \@subtype_row,
         });
     }#foreach
 
     # Populate template
     $tmpl->param(
-        type_row => \@type_row,
+        collective_row => \@collective_row,
     );
     return $tmpl->output();
 }
@@ -654,6 +691,7 @@ A collective type, and sub type passed: A hash of the collectives sub types labe
 
 sub _get_type_collective {
     my ( $collective, $sub_type ) = @_;
+    # Tie hashes with Tie::IxHash so that the keys maintain order
     tie my %numeric, 'Tie::IxHash';
     %numeric = (
         exact => {
@@ -702,6 +740,7 @@ sub _get_type_collective {
             type  => [-11, -7, 16..20, 50, 51, 55, 56],
         },
     );
+    # Put into list of collective types
     tie my %collective_list, 'Tie::IxHash';
     %collective_list = (
         numeric => {
@@ -721,13 +760,28 @@ sub _get_type_collective {
             sub_type => \%misc,
         },
     );
+    # Do we only want part of this list
     if ( $collective ) {
+        tie my %return, 'Tie::IxHash';
         if ( $sub_type ) {
-            return $collective_list{$collective}->{sub_type}->{$sub_type};
+            #return $collective_list{$collective}->{sub_type}->{$sub_type};
+            %return = (
+                $collective => {
+                    label => $collective_list{$collective}->{label},
+                    sub_type => {
+                        $sub_type => $collective_list{$collective}->{sub_type}->{$sub_type},
+                    },
+                },
+            );
+            return \%return;
         }
         else {
-            return $collective_list{$collective};
-        }
+            #return $collective_list{$collective};
+            %return = (
+                $collective => $collective_list{$collective},
+            );
+            return \%return;
+        }#else
     }
     return \%collective_list;
 }
