@@ -1,0 +1,73 @@
+<html>
+<head>
+    <title>CompareRDBMS - Compare Driver Type Details</title>
+    <link rel="stylesheet" type="text/css" href="static/default.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="/static/json2.js"></script>
+    <script src="/static/main.js"></script>
+</head>
+<body id="profile_details">
+
+<h1>CompareRDBMS</h1>
+<h2>Profile Type Details</h2>
+
+<!-- tmpl_loop name=collective_row -->
+<h2><!-- tmpl_var name=collective_label --></h2>
+    <!-- tmpl_loop name=subtype_row -->
+<h3><!-- tmpl_var name=subtype_label --></h3>
+        <!-- tmpl_loop name=type_row -->
+<h4><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</h4>
+<table id="tbl_<!-- tmpl_var name=type_name -->" data-type="<!-- tmpl_var name=type_code -->">
+    <thead>
+        <tr class="heading">
+            <th>Detail</th>
+            <!-- tmpl_loop name=profile_row -->
+            <th colspan="<!-- tmpl_var name=colspan -->"><!-- tmpl_var name=label --></th>
+            <!-- /tmpl_loop -->
+        </tr>
+    </thead>
+    <tbody>
+        <tr class="collective">
+            <th colspan="<!-- tmpl_var name=colspan -->">Standard</th>
+        </tr>
+        <!-- tmpl_loop name=standard_row -->
+        <tr class="<!-- tmpl_var name=class --> standard">
+            <th><!-- tmpl_var name=name --></th>
+            <!-- tmpl_loop name=detail_list -->
+            <td class="pro_<!-- tmpl_var name=profile_uid -->"><input type="text" name="<!-- tmpl_var name=name -->" value="<!-- tmpl_var name=value -->" disabled="disabled"/></td>
+            <!-- /tmpl_loop -->
+        </tr>
+        <!-- /tmpl_loop -->
+        <tr class="collective">
+            <th colspan="<!-- tmpl_var name=colspan -->">Extended</th>
+        </tr>
+        <!-- tmpl_loop name=extended_row -->
+        <tr class="<!-- tmpl_var name=class --> extended">
+            <th><!-- tmpl_var name=name --></th>
+            <!-- tmpl_loop name=detail_list -->
+            <td class="pro_<!-- tmpl_var name=profile_uid -->"><input type="text" name="<!-- tmpl_var name=name -->" value="<!-- tmpl_var name=value -->" disabled="disabled"/></td>
+            <!-- /tmpl_loop -->
+        </tr>
+        <!-- /tmpl_loop -->
+        <tr class="collective">
+            <th>Actions</th>
+        <!-- tmpl_loop name=action_row -->
+            <td class="pro_<!-- tmpl_var name=profile_uid -->">
+                <input type="button" name="create" value="create" data-profile="<!-- tmpl_var name=profile_uid -->" style="display: <!-- tmpl_if name=create -->inline<!-- tmpl_else -->none<!-- /tmpl_if -->"/>
+                <input type="button" name="edit" value="edit" data-profile="<!-- tmpl_var name=profile_uid -->" style="display: <!-- tmpl_if name=edit -->inline<!-- tmpl_else -->none<!-- /tmpl_if -->"/>
+                <input type="button" name="save" value="save" data-profile="<!-- tmpl_var name=profile_uid -->" style="display: <!-- tmpl_if name=save -->inline<!-- tmpl_else -->none<!-- /tmpl_if -->"/>
+                <input type="button" name="delete" value="delete" data-profile="<!-- tmpl_var name=profile_uid -->" style="display: <!-- tmpl_if name=delete -->inline<!-- tmpl_else -->none<!-- /tmpl_if -->"/>
+                <input type="button" name="cancel" value="cancel" data-profile="<!-- tmpl_var name=profile_uid -->" style="display: <!-- tmpl_if name=cancel -->inline<!-- tmpl_else -->none<!-- /tmpl_if -->"/>
+            </td>
+        <!-- /tmpl_loop -->
+        </tr>
+    </tbody>
+</table>
+        <!-- /tmpl_loop -->
+    <!-- /tmpl_loop -->
+<!-- /tmpl_loop -->
+
+<p>Please return to the <a href="compare.cgi">Home Page</a></p>
+
+</body>
+</html>

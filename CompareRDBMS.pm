@@ -36,6 +36,7 @@ sub setup {
         dbms_save            => 'dbms_save',
         profile_config       => 'profile_config',
         profile_save         => 'profile_save',
+        profile_detail_save  => 'profile_detail_save',
         driver_type_list     => 'driver_type_list',
         compare_driver_types         => 'compare_driver_types',
         compare_driver_type_details  => 'compare_driver_type_details',
@@ -456,28 +457,8 @@ sub compare_driver_type_details {
     my $type_name = _get_type_names();
     # Get the collective names of types
     my $collective = _get_type_collective( $collective_id, $subtype_id );
-
-    my %detail_map = (
-        TYPE_NAME          =>  0,
-        DATA_TYPE          =>  1,
-        COLUMN_SIZE        =>  2,
-        LITERAL_PREFIX     =>  3,
-        LITERAL_SUFFIX     =>  4,
-        CREATE_PARAMS      =>  5,
-        NULLABLE           =>  6,
-        CASE_SENSITIVE     =>  7,
-        SEARCHABLE         =>  8,
-        UNSIGNED_ATTRIBUTE =>  9,
-        FIXED_PREC_SCALE   => 10,
-        AUTO_UNIQUE_VALUE  => 11,
-        LOCAL_TYPE_NAME    => 12,
-        MINIMUM_SCALE      => 13,
-        MAXIMUM_SCALE      => 14,
-        SQL_DATA_TYPE      => 15,
-        SQL_DATETIME_SUB   => 16,
-        NUM_PREC_RADIX     => 17,
-        INTERVAL_PRECISION => 18,
-    );
+    # Get the standard type details
+    my $standard_map = _get_type_details( 'standard' );
 
     ## Prepare type details for templates
     # Start with collective type names
@@ -531,7 +512,7 @@ sub compare_driver_type_details {
 
                 my @detail_row;
                 my $count = 0;
-                foreach my $detail ( sort { $detail_map{$a} <=> $detail_map{$b} } keys %detail_map ) {
+                foreach my $detail ( sort { $standard_map->{$a} <=> $standard_map->{$b} } keys %$standard_map ) {
                     my @detail_list;
                     foreach my $db ( @db_list ) {
                         if ( @{ $db_info{$db} } ) {
@@ -586,6 +567,303 @@ sub compare_driver_type_details {
         collective_row => \@collective_row,
     );
     return $tmpl->output();
+}
+
+
+=head2 compare_profile_types
+
+Displays a table for all the types configured for the databases profile.
+
+=cut
+
+sub compare_profile_types {
+    my $self = shift;
+    # Load page template
+    my $tmpl = $self->load_tmpl('compare_profile_types.html', 'die_on_bad_params', 0);
+    # Get list of profiles
+    my $profile_list = _get_profile();
+    # Get list of configured databases
+    my $dbconfig = _get_dbconfig();
+    # Make profile -> db map
+    my %profile_db;
+    foreach my $db ( keys %$dbconfig ) {
+        next unless $dbconfig->{$db}->{profile};
+        push( @{ $profile_db{ $dbconfig->{$db}->{profile} } }, $dbconfig->{$db}->{label} );
+    }
+    ## Prepare for templates
+    # Heading row
+    my @profile_heading;
+    foreach my $profile ( @$profile_list ) {
+        my $db = 'none';
+        $db = join(',', @{ $profile_db{ $profile->{uid} } } ) if ref $profile_db{ $profile->{uid} };
+        push( @profile_heading, {
+            uid   => $profile->{uid},
+            label => $profile->{label},
+            db    => $db,
+        });
+    }#foreach
+
+    # Get the type code -> name
+    my $type_name = _get_type_names();
+    # Get the collective names of types
+    my $collective = _get_type_collective();
+
+    ## Prepare types for templates
+    # Start with collective type names
+    my @collective_row;
+    while ( my ( $collective_id, $collective_info ) = each %$collective ) {
+        # Then sub types
+        my @subtype_row;
+        while ( my ( $subtype_id, $subtype_info ) = each %{ $collective_info->{sub_type} } ) {
+            # Finally types
+            my @type_row;
+            foreach my $type ( @{ $subtype_info->{type} } ) {
+                # With database type support
+                my @support_row;
+                foreach my $profile ( @$profile_list ) {
+                    # Show the profiles type name
+                    push( @support_row, {
+                        collective_id => $collective_id,
+                        subtype_id    => $subtype_id,
+                        type_code     => $type,
+                        type_name     => $profile->{types}->{$type}->{standard}->{TYPE_NAME},
+                        profile       => $profile->{uid},
+                    });
+                }#foreach
+                # Add to type table row
+                push( @type_row, {
+                    collective_id => $collective_id,
+                    subtype_id    => $subtype_id,
+                    type_code     => $type,
+                    type_name     => $type_name->{$type},
+                    support_row   => \@support_row,
+                });
+            }#foreach
+            # Add to sub type rows
+            push( @subtype_row, {
+                collective_id => $collective_id,
+                subtype_id    => $subtype_id,
+                subtype_label => $subtype_info->{label},
+                colspan       => scalar @$profile_list + 1,
+                type_row      => \@type_row,
+            });
+        }
+        # Add to collective rows
+        push( @collective_row, {
+            collective_id    => $collective_id,
+            collective_label => $collective_info->{label},
+            colspan          => scalar @$profile_list + 1,
+            subtype_row      => \@subtype_row,
+        });
+    }#foreach
+
+    # Populate template
+    $tmpl->param(
+        profile_heading => \@profile_heading,
+        collective_row  => \@collective_row,
+    );
+    return $tmpl->output();
+}
+
+
+=head2 compare_profile_type_details
+
+Displays a table for the chosen types detailed and extended information for the selected
+profile.
+
+=cut
+
+sub compare_profile_type_details {
+    my $self = shift;
+    # Load page template
+    my $tmpl = $self->load_tmpl('compare_profile_type_details.html', 'die_on_bad_params', 0);
+    # Get the query object
+    my $q = $self->query();
+    # Get list of profiles
+    my $profile_list = _get_profile();
+    # Is this profile specific?
+    my $profile_uid = $q->param('profile');
+    if ( $profile_uid ) {
+        @$profile_list = grep { $_->{uid} eq $profile_uid } @$profile_list;
+    }
+    # Is this collective, subtype, or type specific?
+    my $collective_id = $q->param('collective');
+    my $subtype_id = $q->param('subtype');
+    my $type_code = $q->param('type');
+    # Get the type code -> name
+    my $type_name = _get_type_names();
+    # Get the collective names of types
+    my $collective = _get_type_collective( $collective_id, $subtype_id );
+
+    my ( $standard_map, $extended_map ) = _get_type_details();
+
+    ## Prepare type details for templates
+    # Start with collective type names
+    my @collective_row;
+    while ( my ( $collective_id, $collective_info ) = each %$collective ) {
+        # Then sub types
+        my @subtype_row;
+        while ( my ( $subtype_id, $subtype_info ) = each %{ $collective_info->{sub_type} } ) {
+            # Finally types
+            my @type_row;
+            my %dbh_map;
+            # Either the subtype type list or a single type
+            my @type_list = $type_code ? ( $type_code ) : @{ $subtype_info->{type} };
+            foreach my $type ( @type_list ) {
+                my @profile_row;
+                my @action_row;
+                my $match_count = 0;
+                # Loop through the driver database connections
+                foreach my $profile ( @$profile_list ) {
+                    # Get the matching type
+                    my $exist = $profile->{types}->{$type} ? 1 : 0;
+                    $match_count += $exist;
+                    push( @profile_row, {
+                        profile => $profile->{uid},
+                        label   => $profile->{label},
+                    });
+                    # Which actions should be visible for this profiles type
+                    push( @action_row, {
+                        profile_uid => $profile->{uid},
+                        create => ! $exist,
+                        edit   => $exist,
+                        save   => 0,
+                        delete => $exist,
+                    });
+                }#foreach
+
+                # Now fill in the rows of type standard details
+                my @standard_row;
+                my $count = 0;
+                foreach my $detail ( sort { $standard_map->{$a} <=> $standard_map->{$b} } keys %$standard_map ) {
+                    my @detail_list;
+                    foreach my $profile ( @$profile_list ) {
+                        my $value = '';
+                        if ( $profile->{types}->{$type} ) {
+                            $value = $profile->{types}->{$type}->{standard}->{$detail};
+                        }
+                        push( @detail_list, {
+                            value => $value,
+                            name  => $detail,
+                            profile_uid => $profile->{uid},
+                        });
+                    }#foreach
+                    # Count is used to calculate the row's CSS class, making the table a bit more readable
+                    $count++;
+                    push( @standard_row, {
+                        name        => $detail,
+                        code        => $standard_map->{$detail},
+                        detail_list => \@detail_list,
+                        class       => $count % 2 ? 'row_a' : 'row_b',
+                    });
+                }#foreach
+
+                # Now fill in the rows of type extended details
+                my @extended_row;
+                $count = 0;
+                foreach my $detail ( sort { $extended_map->{$a} <=> $extended_map->{$b} } keys %$extended_map ) {
+                    my @detail_list;
+                    foreach my $profile ( @$profile_list ) {
+                        my $value = '';
+                        if ( $profile->{types}->{$type} ) {
+                            $value = $profile->{types}->{$type}->{extended}->{$detail};
+                        }
+                        push( @detail_list, {
+                            value => $value,
+                            name  => $detail,
+                            profile_uid => $profile->{uid},
+                        });
+                    }#foreach
+                    # Count is used to calculate the row's CSS class, making the table a bit more readable
+                    $count++;
+                    push( @extended_row, {
+                        name        => $detail,
+                        code        => $extended_map->{$detail},
+                        detail_list => \@detail_list,
+                        class       => $count % 2 ? 'row_a' : 'row_b',
+                    });
+                }#foreach
+
+                # Add to type row
+                push( @type_row, {
+                    type_name    => $type_name->{ $type },
+                    type_code    => $type,
+                    has_match    => 1,
+                    colspan      => scalar @$profile_list + 1,
+                    has_match    => $match_count,
+                    standard_row => \@standard_row,
+                    extended_row => \@extended_row,
+                    profile_row  => \@profile_row,
+                    action_row   => \@action_row,
+                });
+            }#foreach
+            # Add to subtype row
+            push( @subtype_row, {
+                collective_id => $collective_id,
+                subtype_id    => $subtype_id,
+                subtype_label => $subtype_info->{label},
+                colspan       => scalar @$profile_list + 1,
+                type_row      => \@type_row,
+            });
+        }
+        # Add to collective row
+        push( @collective_row, {
+            collective_id    => $collective_id,
+            collective_label => $collective_info->{label},
+            colspan          => scalar @$profile_list + 1,
+            subtype_row      => \@subtype_row,
+        });
+    }#foreach
+
+    # Populate template
+    $tmpl->param(
+        collective_row => \@collective_row,
+    );
+    return $tmpl->output();
+}
+
+
+=head2 profile_detail_save
+
+Saves the profile detailed configuration and returns JSON result.
+
+=cut
+
+sub profile_detail_save {
+    my $self = shift;
+    # Get the query object
+    my $q = $self->query();
+    # Get profile uid and type
+    my $profile_uid = $q->param('profile');
+    my $type = $q->param('type');
+    # Load, update, and save config
+    my $profile = _get_profile( uid => $profile_uid );
+
+    # Are we deleting or updating?
+    if ( $q->param('delete') ) {
+        delete $profile->{types}->{$type};
+    }
+    else {
+        # Decode the JSON
+        $profile->{types}->{$type} = from_json( $q->param('JSONDATA') );
+    }
+
+    my %return = (
+        success => 1,
+    );
+    # Write out to file
+    open( OUTF, ">profiles/$profile->{uid}.config" ) || do {
+        %return = (
+            success => 0,
+            error   => "Cannot write to file profiles/$profile->{uid}.config",
+        );
+    };
+    if ( $return{success} ) {
+        print OUTF Data::Dumper->Dump([$profile], [qw(profile)]);
+        close( OUTF );
+    }
+
+    return to_json(\%return);
 }
 
 
@@ -650,12 +928,13 @@ sub _get_profile {
                 push( @$profile, $profile_hash );
             }#while
         closedir( DIR );
+        $profile = [ sort { $a->{label} cmp $b->{label} } @$profile ];
     }#else
     return $profile;
 }
 
 
-=head2 _get_type_name
+=head2 _get_type_names
 
 Returns a hash mapping the type code numbers to their names.
 
@@ -671,6 +950,59 @@ sub _get_type_names {
         }
     }
     return \%type_name;
+}
+
+
+=head2 _get_type_details
+
+Returns two hashes for standard and extended type details.
+
+=cut
+
+sub _get_type_details {
+    my ( $detail ) = @_;
+    # Define the type details
+    my %standard_map = (
+        TYPE_NAME          =>  0,
+        DATA_TYPE          =>  1,
+        COLUMN_SIZE        =>  2,
+        LITERAL_PREFIX     =>  3,
+        LITERAL_SUFFIX     =>  4,
+        CREATE_PARAMS      =>  5,
+        NULLABLE           =>  6,
+        CASE_SENSITIVE     =>  7,
+        SEARCHABLE         =>  8,
+        UNSIGNED_ATTRIBUTE =>  9,
+        FIXED_PREC_SCALE   => 10,
+        AUTO_UNIQUE_VALUE  => 11,
+        LOCAL_TYPE_NAME    => 12,
+        MINIMUM_SCALE      => 13,
+        MAXIMUM_SCALE      => 14,
+        SQL_DATA_TYPE      => 15,
+        SQL_DATETIME_SUB   => 16,
+        NUM_PREC_RADIX     => 17,
+        INTERVAL_PRECISION => 18,
+    );
+    my %extended_map = (
+        MAX_VALUE          =>  0,
+        MIN_VALUE          =>  1,
+        MAX_UTF8           =>  2,
+    );
+    # Do we want to return both, or just one?
+    if ( $detail ) {
+        if ( $detail eq 'standard' ) {
+            return \%standard_map;
+        }
+        elsif ( $detail eq 'extended' ) {
+            return \%extended_map;
+        }
+        else {
+            croak( "The requested type detail $detail is unknown" );
+        }
+    }
+    else {
+        return ( \%standard_map, \%extended_map );
+    }
 }
 
 

@@ -1,0 +1,49 @@
+<html>
+<head>
+    <title>CompareRDBMS - Compare Profile Types</title>
+    <link rel="stylesheet" type="text/css" href="static/default.css">
+</head>
+<body>
+
+<h1>CompareRDBMS</h1>
+<h2>Profile Type support</h2>
+<table>
+    <thead>
+        <tr class="heading">
+            <th>ODBC Type</th>
+            <!-- tmpl_loop name=profile_heading -->
+            <th><a href="compare.cgi?rm=compare_profile_type_details&profile=<!-- tmpl_var name=uid -->"><!-- tmpl_var name=label --> (<!-- tmpl_var name=db -->)</a></th>
+            <!-- /tmpl_loop -->
+        </tr>
+    </thead>
+    <tbody>
+    <!-- tmpl_loop name=collective_row -->
+        <tr class="collective">
+            <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->"><!-- tmpl_var name=collective_label --></a></th>
+        </tr>
+        <!-- tmpl_loop name=subtype_row -->
+            <tr class="subtype">
+                <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->"><!-- tmpl_var name=subtype_label --></a></th>
+            </tr>
+            <!-- tmpl_loop name=type_row -->
+            <tr class="type">
+                <th><a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
+                <!-- tmpl_loop name=support_row -->
+                <td>
+                    <!-- tmpl_if name=type_name -->
+                    <a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&profile=<!-- tmpl_var name=profile -->"><!-- tmpl_var name=type_name --></a>
+                    <!-- tmpl_else -->
+                    <a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&profile=<!-- tmpl_var name=profile -->">(create)</a>
+                    <!-- /tmpl_if -->
+                </td>
+                <!-- /tmpl_loop -->
+            </tr>
+            <!-- /tmpl_loop -->
+        <!-- /tmpl_loop -->
+    <!-- /tmpl_loop -->
+    </tbody>
+</table>
+<p>Please return to the <a href="compare.cgi">Home Page</a></p>
+
+</body>
+</html>

@@ -1,53 +1,13 @@
 <html>
 <head>
     <title>CompareRDBMS - Config</title>
+    <link rel="stylesheet" type="text/css" href="static/default.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="/static/main.js"></script>
     <script>
-        $(document).ready(function() {
-            // Ajax call to DB config test function
-            $('#test_btn').click( function () {
-                $('#test_results').html('<img src="http://img.cdn.tl/loading51.gif" width=30 height=30/>');
-                $.post(
-                    'compare.cgi',
-                    $('#config_form').serialize().replace('rm=dbms_save','rm=dbms_test'),
-                    function (response) {
-                        if ( response.success ) {
-                            // Set green colour
-                            $('#test_results').css('background-color', '#AAFFAA');
-                            $('#test_results').html('ok');
-                        }
-                        else {
-                            // Set red colour
-                            $('#test_results').css('background-color', '#FFAAAA');
-                            $('#test_results').html(response.error);
-                        }
-                    },
-                    'json'
-                );
-            });
-            // Reset test results on form change
-            $('#config_form').change( function () {
-                // Remove colour
-                $('test_results').html('');
-            });
-            
-            var dsn_sample = "<!-- tmpl_var name=dsn_sample -->";
-            // Generate a sample dsn
-            $('#dsn_btn').click( function () {
-                var dsn = dsn_sample.replace( '{db}', $('#db').val() ).replace( '{host}', $('#host').val() );
-                $('#dsn').val( dsn );
-            });
-        });
+        // Define a global variable that can be picked up by the main routines
+        var dsn_sample = "<!-- tmpl_var name=dsn_sample -->";
     </script>
-    <style>
-        #test_results {
-            display: inline-block;
-            height: 30px;
-            min-width: 30px;
-            text-align: center;
-            padding: 5px 5px 0px 5px;
-        }
-    </style>
 </head>
 <body>
 
