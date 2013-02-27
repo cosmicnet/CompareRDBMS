@@ -37,6 +37,8 @@ sub setup {
         profile_config       => 'profile_config',
         profile_save         => 'profile_save',
         profile_detail_save  => 'profile_detail_save',
+        profile_type_check   => 'profile_type_check',
+        profile_type_copy    => 'profile_type_copy',
         driver_type_list     => 'driver_type_list',
         compare_driver_types         => 'compare_driver_types',
         compare_driver_type_details  => 'compare_driver_type_details',
@@ -336,6 +338,8 @@ The databases local name for the type is given.
 
 sub compare_driver_types {
     my $self = shift;
+    # Get the query object
+    my $q = $self->query();
     # Load page template
     my $tmpl = $self->load_tmpl('compare_driver_types.html', 'die_on_bad_params', 0);
     # Get list of configured databases
@@ -343,10 +347,14 @@ sub compare_driver_types {
     my @db_list = sort keys %$dbconfig;
     my @db_row;
     my %db_types;
+    my %profile_hash;
     foreach my $db ( @db_list ) {
+        my $profile = $dbconfig->{$db}->{profile};
         push( @db_row, {
-            db    => $db,
-            label => $dbconfig->{$db}->{label},
+            db      => $db,
+            label   => $dbconfig->{$db}->{label},
+            profile => $profile,
+            colspan => $profile ? 2 : 1,
         });
         my $dbh = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{user}, $dbconfig->{$db}->{pass} );
         # Compile all types
@@ -355,6 +363,10 @@ sub compare_driver_types {
             push( @{ $db_types{ $type->[1] }->{$db} }, $type->[0] );
         }
         $dbh->disconnect;
+        # Are we including profiles
+        if ( $q->param('profile') && $profile ) {
+            $profile_hash{$profile} = _get_profile( uid => $profile );
+        }
     }#foreach
 
     # Get the type code -> name
@@ -364,6 +376,7 @@ sub compare_driver_types {
 
     ## Prepare types for templates
     # Start with collective type names
+    my $select_type_list = {};
     my @collective_row;
     while ( my ( $collective_id, $collective_info ) = each %$collective ) {
         # Then sub types
@@ -375,6 +388,7 @@ sub compare_driver_types {
                 # With database type support
                 my @support_row;
                 foreach my $db ( @db_list ) {
+                    my $profile = $dbconfig->{$db}->{profile};
                     my @db_type_list;
                     # Loop the DB's type names
                     foreach my $type_name ( @{ $db_types{$type}->{$db} } ) {
@@ -384,10 +398,21 @@ sub compare_driver_types {
                             type_code     => $type,
                             type_name     => $type_name,
                             db            => $db,
+                            profile       => scalar( $q->param('profile') ) && $profile,
                         });
                     }#foreach
+                    my ( $profile_uid, $profile_type_name ) = ( '', '' );
+                    if ( $q->param('profile') && $profile ) {
+                        $profile_uid = $profile;
+                        $profile_type_name = $profile_hash{$profile}->{types}->{$type}->{standard}->{TYPE_NAME};
+                    }
                     push( @support_row, {
-                        db_type_list => \@db_type_list,
+                        db_type_list      => \@db_type_list,
+                        collective_id     => $collective_id,
+                        subtype_id        => $subtype_id,
+                        type_code         => $type,
+                        profile           => $profile_uid,
+                        profile_type_name => $profile_type_name,
                     });
                 }#foreach
                 # Add to type table row
@@ -398,13 +423,18 @@ sub compare_driver_types {
                     type_name     => $type_name->{$type},
                     support_row   => \@support_row,
                 });
+                # Add to select type list
+                push( @{ $select_type_list->{$collective_id} }, {
+                    type_code => $type,
+                    type_name => $type_name->{$type},
+                });
             }#foreach
             # Add to sub type rows
             push( @subtype_row, {
                 collective_id => $collective_id,
                 subtype_id    => $subtype_id,
                 subtype_label => $subtype_info->{label},
-                colspan       => scalar @db_list + 1,
+                colspan       => scalar @db_list + scalar( keys %profile_hash ) + 1,
                 type_row      => \@type_row,
             });
         }
@@ -412,15 +442,21 @@ sub compare_driver_types {
         push( @collective_row, {
             collective_id    => $collective_id,
             collective_label => $collective_info->{label},
-            colspan          => scalar @db_list + 1,
+            colspan          => scalar @db_list + scalar( keys %profile_hash ) + 1,
             subtype_row      => \@subtype_row,
         });
     }#foreach
 
     # Populate template
     $tmpl->param(
-        db_list        => \@db_row,
-        collective_row => \@collective_row,
+        type_rowspan       => scalar keys %profile_hash ? 2 : 1,
+        profile            => scalar $q->param('profile'),
+        db_list            => \@db_row,
+        collective_row     => \@collective_row,
+        numeric_type_list  => $select_type_list->{numeric},
+        string_type_list   => $select_type_list->{string},
+        datetime_type_list => $select_type_list->{datetime},
+        misc_type_list     => $select_type_list->{misc},
     );
     return $tmpl->output();
 }
@@ -867,6 +903,96 @@ sub profile_detail_save {
 }
 
 
+=head2 profile_type_check
+
+Checks if a particular profile type exists.
+
+=cut
+
+sub profile_type_check {
+    my $self = shift;
+    # Get the query object
+    my $q = $self->query();
+    # Get db and profile type
+    my $db = $q->param('db');
+    my $type = $q->param('type');
+
+    # Get configured database
+    my $dbconfig = _get_dbconfig( $db );
+
+    # Prepare return
+    my %return = (
+        success => 1,
+    );
+    # Load profile
+    my $profile = eval { _get_profile( uid => $dbconfig->{profile} ) };
+    if ( $@ ) {
+        $return{success} = 0;
+        $return{error} = 'Error opening profile';
+    }
+    else {
+        $return{exists} = 1 if ref $profile->{types}->{$type};
+    }
+
+    return to_json(\%return);
+}
+
+
+=head2 profile_type_copy
+
+Copys a driver type definition to a profile type definition.
+
+=cut
+
+sub profile_type_copy {
+    my $self = shift;
+    # Get the query object
+    my $q = $self->query();
+
+    # Get destination profile type
+    my $profile_type = $q->param('profile_type');
+    # Get source DB driver type
+    my $db = $q->param('db');
+    my $db_type = $q->param('db_type');
+    my $db_type_name = $q->param('db_type_name');
+
+    ## Get DB driver type details
+    # Get configured database
+    my $dbconfig = _get_dbconfig( $db );
+    # Create the DB DSN
+    my $dbh = DBI->connect( $dbconfig->{dsn}, $dbconfig->{user}, $dbconfig->{pass} );
+    # Get the matching types
+    my @type_info = $dbh->type_info( $db_type );
+    my ( $db_type_details ) = grep { $_->{TYPE_NAME} eq $db_type_name } @type_info;
+
+    # Prepare return
+    my %return = (
+        success => 1,
+        profile_uid => $dbconfig->{profile},
+    );
+    # Load profile
+    my $profile = eval { _get_profile( uid => $dbconfig->{profile} ) };
+    if ( $@ ) {
+        $return{success} = 0;
+        $return{error} = 'Error opening profile';
+    }
+    else {
+        $profile->{types}->{$profile_type}->{standard} = $db_type_details;
+        # Write out to file
+        open( OUTF, ">profiles/$dbconfig->{profile}.config" ) || do {
+            $return{success} = 0;
+            $return{error} = "Cannot write to file profiles/$dbconfig->{profile}.config";
+        };
+        if ( $return{success} ) {
+            print OUTF Data::Dumper->Dump([$profile], [qw(profile)]);
+            close( OUTF );
+        }
+    }
+
+    return to_json(\%return);
+}
+
+
 =head1 INTERNAL FUNCTIONS
 
 =head2 _get_db_config
@@ -946,7 +1072,7 @@ sub _get_type_names {
         no strict 'refs';
         foreach (@{ $DBI::EXPORT_TAGS{sql_types} }) {
             next if $_ eq 'SQL_ALL_TYPES' || $_ !~ /^SQL_/;
-            $type_name{ &{"DBI::$_"} } = $_;
+            ( $type_name{ &{"DBI::$_"} } = $_ ) =~ s/SQL_//;
         }
     }
     return \%type_name;

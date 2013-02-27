@@ -14,11 +14,13 @@ $(document).ready(function() {
 
     // Ajax call to DB config test function
     $('#test_btn').click( function () {
-        $('#test_results').html('<img src="http://img.cdn.tl/loading51.gif" width=30 height=30/>');
+        $('#test_results').addClass('loading');
+        $('#test_results').html('&nbsp;');
         $.post(
             'compare.cgi',
             $('#config_form').serialize().replace('rm=dbms_save','rm=dbms_test'),
             function (response) {
+                $('#test_results').removeClass('loading');
                 if ( response.success ) {
                     // Set green colour
                     $('#test_results').css('background-color', '#AAFFAA');
@@ -190,5 +192,106 @@ $(document).ready(function() {
             );
         }
     });
+
+    // Copy driver type
+    $('a[href=#copy]').click( function () {
+        // Show the right type selection box
+        $( 'select', '#copy_dialog' ).hide();
+        var $profile_type = $( 'select[data-id=' + $(this).attr('data-collective') + ']' );
+        $profile_type.show();
+        $profile_type.val( $(this).attr('data-type') );
+        // Show the driver type name
+        $( 'span[data-id=driver_type]' ).html( $(this).attr('data-type_name') );
+        // Collect profile and db details
+        var db = {
+            db: $(this).attr('data-db'),
+            type: $(this).attr('data-type'),
+            type_name: $(this).attr('data-type_name')
+        };
+        // Show the dialog
+        $( '#copy_dialog' ).dialog({
+            resizable: true,
+            height: '300',
+            width: '300',
+            position: [ $(window).width()/2-150, 100 ],
+            modal: true,
+            title: 'Copy Type Details',
+            buttons: {
+                'Copy': function() {
+                    copy_driver_type_check( db, $profile_type.val() );
+                },
+                'Cancel': function() {
+                    $(this).dialog('close');
+                }
+            },
+            close: function () {
+
+            }
+        });
+    });
+
+    function copy_driver_type_check( db, profile_type ) {
+        // Set loading image
+        $('#copy_result').html('<img src="http://img.cdn.tl/loading51.gif" width=30 height=30/>');
+        // Check if the type exists
+        $.post(
+            '/compare.cgi',
+            {
+                rm: 'profile_type_check',
+                db: db.db,
+                type: profile_type
+            },
+            function (response) {
+                // All good?
+                if ( response.success ) {
+                    // Does it exist
+                    if ( response.exists ) {
+                        if ( confirm('Type already exists, do you want to replace it?') ) {
+                            copy_driver_type( db, profile_type );
+                        }
+                        else {
+                            $('#copy_result').html('');
+                        }
+                    }
+                    else {
+                        copy_driver_type( db, profile_type );
+                    }
+                }
+                else {
+                    $('#copy_result').html( response.error );
+                }
+            },
+            'json'
+        );
+    }
+
+    function copy_driver_type( db, profile_type ) {
+        // Copy the driver type to the profile type
+        $.post(
+            '/compare.cgi',
+            {
+                rm: 'profile_type_copy',
+                profile_type: profile_type,
+                db: db.db,
+                db_type: db.type,
+                db_type_name: db.type_name
+            },
+            function (response) {
+                // All good?
+                if ( response.success ) {
+                    $('#copy_result').html( 'Copy successful' );
+                    // Update HTML link
+                    var cell = $('th #' + response.profile_uid );
+                    var profile_index = cell.parent('tr').children().index(cell);
+                    $('tr[data-type=' + profile_type + '] td:eq(' + profile_index + ') a').html(db.type_name);
+                }
+                else {
+                    $('#copy_result').html( response.error );
+                }
+            },
+            'json'
+        );
+    }
+
 
 });

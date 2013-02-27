@@ -1,7 +1,12 @@
 <html>
 <head>
     <title>CompareRDBMS - Compare Driver Types</title>
-    <link rel="stylesheet" type="text/css" href="static/default.css">
+    <link rel="stylesheet" type="text/css" href="static/css/default.css">
+    <link rel="stylesheet" type="text/css" href="static/css/smoothness/jquery-ui-1.10.0.custom.min.css">
+    <script src="/static/js/jquery-1.9.0.js"></script>
+    <script src="/static/js/jquery-ui-1.10.0.custom.min.js"></script>
+    <script src="/static/js/json2.js"></script>
+    <script src="/static/js/main.js"></script>
 </head>
 <body>
 
@@ -10,11 +15,21 @@
 <table>
     <thead>
         <tr class="heading">
-            <th>ODBC Type</th>
+            <th rowspan="<!-- tmpl_var name=type_rowspan -->">ODBC Types</th>
             <!-- tmpl_loop name=db_list -->
-            <th><a href="compare.cgi?rm=compare_driver_type_details&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=label --></a></th>
+            <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_type_details&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=label --></a></th>
             <!-- /tmpl_loop -->
         </tr>
+        <!-- tmpl_if name=profile -->
+        <tr class="heading">
+            <!-- tmpl_loop name=db_list -->
+            <th><a href="compare.cgi?rm=compare_driver_type_details&db=<!-- tmpl_var name=db -->">Driver</a></th>
+            <!-- tmpl_if name=profile -->
+            <th data-profile="<!-- tmpl_var name=profile -->"><a href="compare.cgi?rm=compare_profile_type_details&profile=<!-- tmpl_var name=profile -->">Profile</a></th>
+            <!-- /tmpl_if -->
+            <!-- /tmpl_loop -->
+        </tr>
+        <!-- /tmpl_if -->
     </thead>
     <tbody>
     <!-- tmpl_loop name=collective_row -->
@@ -26,14 +41,26 @@
                 <th colspan="<!-- tmpl_var name=colspan -->"><a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->"><!-- tmpl_var name=subtype_label --></a></th>
             </tr>
             <!-- tmpl_loop name=type_row -->
-            <tr class="type">
+            <tr class="type" data-type="<!-- tmpl_var name=type_code -->">
                 <th><a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</a></th>
                 <!-- tmpl_loop name=support_row -->
                 <td>
                     <!-- tmpl_loop name=db_type_list -->
-                    <a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&type_name=<!-- tmpl_var name=type_name -->&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=type_name --></a>&nbsp;
+                    <a href="compare.cgi?rm=compare_driver_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&type_name=<!-- tmpl_var name=type_name -->&db=<!-- tmpl_var name=db -->"><!-- tmpl_var name=type_name --></a>
+                    <!-- tmpl_if name=profile -->
+                    <a href="#copy" data-collective="<!-- tmpl_var name=collective_id -->" data-type="<!-- tmpl_var name=type_code -->" data-type_name="<!-- tmpl_var name=type_name -->" data-db="<!-- tmpl_var name=db -->">(copy)</a>&nbsp;
+                    <!-- /tmpl_if -->
                     <!-- /tmpl_loop -->
                 </td>
+                    <!-- tmpl_if name=profile -->
+                <td>
+                    <!-- tmpl_if name=profile_type_name -->
+                    <a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&profile=<!-- tmpl_var name=profile -->"><!-- tmpl_var name=profile_type_name --></a>
+                    <!-- tmpl_else -->
+                    <a href="compare.cgi?rm=compare_profile_type_details&collective=<!-- tmpl_var name=collective_id -->&subtype=<!-- tmpl_var name=subtype_id -->&type=<!-- tmpl_var name=type_code -->&profile=<!-- tmpl_var name=profile -->">(create)</a>
+                    <!-- /tmpl_if -->
+                </td>
+                    <!-- /tmpl_if -->
                 <!-- /tmpl_loop -->
             </tr>
             <!-- /tmpl_loop -->
@@ -43,5 +70,34 @@
 </table>
 <p>Please return to the <a href="compare.cgi">Home Page</a></p>
 
+<div id="copy_dialog" style="display: none">
+    <p>
+        <label>Driver Type:</label><br/>
+        <span data-id="driver_type"></span>
+    </p>
+    <p><label>Destination Type:</label><br/>
+    <select name="type" data-id="numeric" style="display: none">
+    <!-- tmpl_loop name="numeric_type_list" -->
+        <option value="<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --></option>
+    <!-- /tmpl_loop -->
+    </select>
+    <select name="type" data-id="string" style="display: none">
+    <!-- tmpl_loop name="string_type_list" -->
+        <option value="<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --></option>
+    <!-- /tmpl_loop -->
+    </select>
+    <select name="type" data-id="datetime" style="display: none">
+    <!-- tmpl_loop name="datetime_type_list" -->
+        <option value="<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --></option>
+    <!-- /tmpl_loop -->
+    </select>
+    <select name="type" data-id="misc" style="display: none">
+    <!-- tmpl_loop name="misc_type_list" -->
+        <option value="<!-- tmpl_var name=type_code -->"><!-- tmpl_var name=type_name --></option>
+    <!-- /tmpl_loop -->
+    </select>
+    </p>
+    <div id="copy_result"></div>
+</div>
 </body>
 </html>

@@ -71,8 +71,22 @@ table tr.row_b td {
 
 #test_results {
     display: inline-block;
-    height: 30px;
-    min-width: 30px;
+    height: 24px;
+    min-width: 24px;
     text-align: center;
-    padding: 5px 5px 0px 5px;
+    padding: 0;
+    margin: 5px 0;
+}
+
+.loading {
+    background-image: url('/static/img/loader24.gif');
+}
+
+
+/*
+ * Styles for the type copy dialog
+ */
+
+#copy_dialog label {
+    font-weight: bold;
 }
