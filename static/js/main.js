@@ -8,6 +8,9 @@
 // Load JS once the rest of the page has finished loading
 $(document).ready(function() {
 
+    // Preload loading image
+    $("<img />").attr('src', '/static/img/loader24.gif');
+
     /*
      * Routines for the DBMS configuration
      */
@@ -195,6 +198,8 @@ $(document).ready(function() {
 
     // Copy driver type
     $('a[href=#copy]').click( function () {
+
+        $('#copy_result').html('');
         // Show the right type selection box
         $( 'select', '#copy_dialog' ).hide();
         var $profile_type = $( 'select[data-id=' + $(this).attr('data-collective') + ']' );
@@ -211,7 +216,7 @@ $(document).ready(function() {
         // Show the dialog
         $( '#copy_dialog' ).dialog({
             resizable: true,
-            height: '300',
+            height: '340',
             width: '300',
             position: [ $(window).width()/2-150, 100 ],
             modal: true,
@@ -232,7 +237,7 @@ $(document).ready(function() {
 
     function copy_driver_type_check( db, profile_type ) {
         // Set loading image
-        $('#copy_result').html('<img src="http://img.cdn.tl/loading51.gif" width=30 height=30/>');
+        $('#copy_result').html('<img src="/static/img/loader24.gif" width=24 height=24/>');
         // Check if the type exists
         $.post(
             '/compare.cgi',
