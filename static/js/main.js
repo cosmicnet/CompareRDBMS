@@ -286,7 +286,7 @@ $(document).ready(function() {
                 if ( response.success ) {
                     $('#copy_result').html( 'Copy successful' );
                     // Update HTML link
-                    var cell = $('th #' + response.profile_uid );
+                    var cell = $('th[data-profile=' + response.profile_uid + ']');
                     var profile_index = cell.parent('tr').children().index(cell);
                     $('tr[data-type=' + profile_type + '] td:eq(' + profile_index + ') a').html(db.type_name);
                 }
