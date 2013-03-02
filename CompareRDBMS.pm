@@ -125,7 +125,7 @@ sub dbms_config {
         push( @profile_list, {
             uid   => $profile->{uid},
             label => $profile->{label},
-            selected => $dbconfig->{profile} eq $profile->{uid} ? 'selected="selected"' : '',
+            selected => $dbconfig->{profile} && $dbconfig->{profile} eq $profile->{uid} ? 'selected="selected"' : '',
         });
     }
     # DSN templates
