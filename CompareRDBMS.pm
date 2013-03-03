@@ -1110,9 +1110,10 @@ sub _get_type_details {
         INTERVAL_PRECISION => 18,
     );
     my %extended_map = (
-        MAX_VALUE          =>  0,
-        MIN_VALUE          =>  1,
-        MAX_UTF8           =>  2,
+        MAX_VALUE          => 0,
+        MIN_VALUE          => 1,
+        MAX_UTF8           => 2,
+        EMULATED           => 3,
     );
     # Do we want to return both, or just one?
     if ( $detail ) {
