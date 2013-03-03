@@ -354,7 +354,7 @@ sub compare_driver_types {
             db      => $db,
             label   => $dbconfig->{$db}->{label},
             profile => $profile,
-            colspan => $profile ? 2 : 1,
+            colspan => $profile && $q->param('profile') ? 2 : 1,
         });
         my $dbh = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{user}, $dbconfig->{$db}->{pass} );
         # Compile all types
