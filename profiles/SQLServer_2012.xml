@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<profile>
+    <uid>SQLServer_2012</uid>
+    <label>SQL Server 2012</label>
+    <drivers>
+        <driver>ODBC</driver>
+    </drivers>
+    <rdbms>
+        <name>SQL Server</name>
+        <version>2012</version>
+    </rdbms>
+    <types>
+        <BIGINT code="-5">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>9,223,372,036,854,775,807</MAX_VALUE>
+                <MIN_VALUE>-9,223,372,036,854,775,808</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>19</COLUMN_SIZE>
+                <CREATE_PARAMS></CREATE_PARAMS>
+                <DATA_TYPE>-5</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Big Integer</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE>0</MAXIMUM_SCALE>
+                <MINIMUM_SCALE>0</MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>10</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>-5</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>BIGINT</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </BIGINT>
+        <DECIMAL code="3">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>-1E38+1</MAX_VALUE>
+                <MIN_VALUE>1E38-1</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>38</COLUMN_SIZE>
+                <CREATE_PARAMS>precision,scale</CREATE_PARAMS>
+                <DATA_TYPE>3</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Decimal</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE>38</MAXIMUM_SCALE>
+                <MINIMUM_SCALE>0</MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>10</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>3</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>DECIMAL</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </DECIMAL>
+        <DOUBLE code="8">
+            <extended>
+                <EMULATED></EMULATED>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>3.40E+38</MAX_VALUE>
+                <MIN_VALUE>-3.40E+38</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>53</COLUMN_SIZE>
+                <CREATE_PARAMS>precision</CREATE_PARAMS>
+                <DATA_TYPE>6</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Double</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE></MAXIMUM_SCALE>
+                <MINIMUM_SCALE></MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>2</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>6</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>FLOAT</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </DOUBLE>
+        <FLOAT code="6">
+            <extended>
+                <EMULATED>1</EMULATED>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>3.40E+38</MAX_VALUE>
+                <MIN_VALUE>-3.40E+38</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>24</COLUMN_SIZE>
+                <CREATE_PARAMS>precision</CREATE_PARAMS>
+                <DATA_TYPE>6</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Float</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE></MAXIMUM_SCALE>
+                <MINIMUM_SCALE></MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>2</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>6</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>FLOAT</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </FLOAT>
+        <INTEGER code="4">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>2,147,483,647</MAX_VALUE>
+                <MIN_VALUE>-2,147,483,648</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>10</COLUMN_SIZE>
+                <CREATE_PARAMS></CREATE_PARAMS>
+                <DATA_TYPE>4</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Integer</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE>0</MAXIMUM_SCALE>
+                <MINIMUM_SCALE>0</MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>10</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>4</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>INT</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </INTEGER>
+        <NUMERIC code="2">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>999999999999999999</MAX_VALUE>
+                <MIN_VALUE>-999999999999999999</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>38</COLUMN_SIZE>
+                <CREATE_PARAMS>precision,scale</CREATE_PARAMS>
+                <DATA_TYPE>2</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Numeric</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE>38</MAXIMUM_SCALE>
+                <MINIMUM_SCALE>0</MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>10</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>2</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>NUMERIC</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </NUMERIC>
+        <REAL code="7">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>3.40E+38</MAX_VALUE>
+                <MIN_VALUE>-3.40E+38</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>24</COLUMN_SIZE>
+                <CREATE_PARAMS></CREATE_PARAMS>
+                <DATA_TYPE>7</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Real</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE></MAXIMUM_SCALE>
+                <MINIMUM_SCALE></MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>2</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>7</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>REAL</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </REAL>
+        <SMALLINT code="5">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>32,767</MAX_VALUE>
+                <MIN_VALUE>-32,768</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>5</COLUMN_SIZE>
+                <CREATE_PARAMS></CREATE_PARAMS>
+                <DATA_TYPE>5</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Small Integer</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE>0</MAXIMUM_SCALE>
+                <MINIMUM_SCALE>0</MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>10</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>5</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>SMALLINT</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>0</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </SMALLINT>
+        <TINYINT code="-6">
+            <extended>
+                <MAX_UTF8></MAX_UTF8>
+                <MAX_VALUE>255</MAX_VALUE>
+                <MIN_VALUE>0</MIN_VALUE>
+            </extended>
+            <standard>
+                <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <COLUMN_SIZE>3</COLUMN_SIZE>
+                <CREATE_PARAMS></CREATE_PARAMS>
+                <DATA_TYPE>-6</DATA_TYPE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+                <LITERAL_PREFIX></LITERAL_PREFIX>
+                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LOCAL_TYPE_NAME>Tiny Integer</LOCAL_TYPE_NAME>
+                <MAXIMUM_SCALE>0</MAXIMUM_SCALE>
+                <MINIMUM_SCALE>0</MINIMUM_SCALE>
+                <NULLABLE>1</NULLABLE>
+                <NUM_PREC_RADIX>10</NUM_PREC_RADIX>
+                <SEARCHABLE>2</SEARCHABLE>
+                <SQL_DATA_TYPE>-6</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <TYPE_NAME>TINYINT</TYPE_NAME>
+                <UNSIGNED_ATTRIBUTE>1</UNSIGNED_ATTRIBUTE>
+            </standard>
+        </TINYINT>
+        <CHAR code="1">
+            <standard>
+                <TYPE_NAME>char</TYPE_NAME>
+                <DATA_TYPE>1</DATA_TYPE>
+                <COLUMN_SIZE>8000</COLUMN_SIZE>
+                <LITERAL_PREFIX>&apos;</LITERAL_PREFIX>
+                <LITERAL_SUFFIX>&apos;</LITERAL_SUFFIX>
+                <CREATE_PARAMS>length</CREATE_PARAMS>
+                <NULLABLE>1</NULLABLE>
+                <CASE_SENSITIVE>0</CASE_SENSITIVE>
+                <SEARCHABLE>3</SEARCHABLE>
+                <UNSIGNED_ATTRIBUTE></UNSIGNED_ATTRIBUTE>
+                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
+                <AUTO_UNIQUE_VALUE></AUTO_UNIQUE_VALUE>
+                <LOCAL_TYPE_NAME>char</LOCAL_TYPE_NAME>
+                <MINIMUM_SCALE></MINIMUM_SCALE>
+                <MAXIMUM_SCALE></MAXIMUM_SCALE>
+                <SQL_DATA_TYPE>1</SQL_DATA_TYPE>
+                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
+                <NUM_PREC_RADIX></NUM_PREC_RADIX>
+                <INTERVAL_PRECISION></INTERVAL_PRECISION>
+            </standard>
+            <extended>
+                <MAX_VALUE></MAX_VALUE>
+                <MIN_VALUE></MIN_VALUE>
+                <MAX_UTF8>2000</MAX_UTF8>
+                <EMULATED></EMULATED>
+            </extended>
+        </CHAR>
+    </types>
+    <ddl>
+        <table>
+            <create is="list">
+                <delimiter>;</delimiter>
+                <statement>1</statement>
+                <item name="definition" is="element" required="1" />
+                <item name="index" is="element" multiple="1" />
+                <item name="constraint" is="element" multiple="1" />
+            </create>
+            <definition is="string">
+                <token name="create" is="literal" string="CREATE" />
+                <token name="table" is="literal" string="TABLE" />
+                <token name="name" is="variable" required="1" quote="identifier">
+                    <modifier name="temporary" prepend="#" />
+                </token>
+                <token name="column_list" is="element" required="1" />
+            </definition>
+            <column_list is="list" key="column_list">
+                <prefix>(</prefix>
+                <suffix>)</suffix>
+                <delimiter>, </delimiter>
+                <item name="column" is="element" required="1" multiple="1" />
+            </column_list>
+            <column is="string">
+                <token name="name" is="variable" required="1" quote="identifier" />
+                <token name="data_type" is="element" required="1" />
+                <token name="null" is="option" if="NULL" else="NOT NULL" />
+                <token name="default" is="variable" prefix="DEFAULT " quote="literal" />
+            </column>
+            <data_type is="string">
+                <token name="type" is="type" required="1" />
+            </data_type>
+            <column_ref is="list">
+                <prefix>(</prefix>
+                <suffix>)</suffix>
+                <delimiter>, </delimiter>
+                <item name="column_ref" is="variable" required="1" multiple="1" quote="identifier" />
+            </column_ref>
+            <index is="string">
+                <token name="create" is="literal" string="CREATE" />
+                <token name="index" is="literal" string="INDEX" />
+                <token name="name" is="variable" required="1" quote="identifier" />
+                <token name="table" is="variable" from="context" prefix="ON " />
+                <token name="column_ref" is="element" />
+            </index>
+            <constraint is="string">
+                <token name="create" is="literal" string="ALTER TABLE" />
+                <token name="table" is="variable" quote="identifier" />
+                <token name="constraint" is="literal" string="ADD CONSTRAINT" />
+                <token name="type" is="element_type" />
+                <token name="name" is="variable" quote="identifier" />
+                <token name="column_ref" is="element" />
+                <token name="reference" is="element" />
+                <type name="PRIMARY KEY" />
+                <type name="UNIQUE" />
+                <type name="FOREIGN KEY" />
+            </constraint>
+            <reference is="string">
+                <token name="reference" is="literal" string="REFERENCES" />
+                <token name="table" is="variable" from="context" required="1" />
+                <token name="column_ref" is="element" />
+                <token name="on_delete" is="element_type" prefix="ON DELETE " />
+                <type name="CASCADE" />
+                <type name="NO ACTION" />
+                <type name="SET NULL" />
+                <type name="SET DEFAULT" />
+            </reference>
+            <drop is="list">
+                <delimiter>;</delimiter>
+                <statement>1</statement>
+                <item name="drop_constraint" key="constraint" is="element" multiple="1" />
+                <item name="drop_index" key="index" is="element" multiple="1" />
+                <item name="drop_table" key="definition" is="element" required="1" />
+            </drop>
+            <drop_table is="string">
+                <token name="drop" is="literal" string="DROP TABLE" />
+                <token name="name" is="variable" required="1" quote="identifier" />
+            </drop_table>
+            <drop_index is="string">
+                <token name="alter" is="literal" string="ALTER IGNORE TABLE" />
+                <token name="table" is="variable" from="context" required="1" quote="identifier" />
+                <token name="alter" is="literal" string="DROP INDEX IF EXISTS" />
+                <token name="name" is="variable" required="1" quote="identifier" />
+            </drop_index>
+            <drop_constraint is="string">
+                <token name="alter" is="literal" string="ALTER IGNORE TABLE" />
+                <token name="table" is="variable" from="context" required="1" quote="identifier" />
+                <token name="alter" is="literal" string="DROP" />
+                <token name="type" is="variable" />
+                <token name="name" is="variable" quote="identifier" />
+            </drop_constraint>
+        </table>
+    </ddl>
+</profile>
