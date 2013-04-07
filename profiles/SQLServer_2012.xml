@@ -41,8 +41,8 @@
         <DECIMAL code="3">
             <extended>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>-1E38+1</MAX_VALUE>
-                <MIN_VALUE>1E38-1</MIN_VALUE>
+                <MAX_VALUE>-99999999999999999999999999999999999999</MAX_VALUE>
+                <MIN_VALUE>99999999999999999999999999999999999999</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -155,8 +155,8 @@
         <NUMERIC code="2">
             <extended>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>999999999999999999</MAX_VALUE>
-                <MIN_VALUE>-999999999999999999</MIN_VALUE>
+                <MAX_VALUE>-99999999999999999999999999999999999999</MAX_VALUE>
+                <MIN_VALUE>99999999999999999999999999999999999999</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -264,35 +264,6 @@
                 <UNSIGNED_ATTRIBUTE>1</UNSIGNED_ATTRIBUTE>
             </standard>
         </TINYINT>
-        <CHAR code="1">
-            <standard>
-                <TYPE_NAME>char</TYPE_NAME>
-                <DATA_TYPE>1</DATA_TYPE>
-                <COLUMN_SIZE>8000</COLUMN_SIZE>
-                <LITERAL_PREFIX>&apos;</LITERAL_PREFIX>
-                <LITERAL_SUFFIX>&apos;</LITERAL_SUFFIX>
-                <CREATE_PARAMS>length</CREATE_PARAMS>
-                <NULLABLE>1</NULLABLE>
-                <CASE_SENSITIVE>0</CASE_SENSITIVE>
-                <SEARCHABLE>3</SEARCHABLE>
-                <UNSIGNED_ATTRIBUTE></UNSIGNED_ATTRIBUTE>
-                <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
-                <AUTO_UNIQUE_VALUE></AUTO_UNIQUE_VALUE>
-                <LOCAL_TYPE_NAME>char</LOCAL_TYPE_NAME>
-                <MINIMUM_SCALE></MINIMUM_SCALE>
-                <MAXIMUM_SCALE></MAXIMUM_SCALE>
-                <SQL_DATA_TYPE>1</SQL_DATA_TYPE>
-                <SQL_DATETIME_SUB></SQL_DATETIME_SUB>
-                <NUM_PREC_RADIX></NUM_PREC_RADIX>
-                <INTERVAL_PRECISION></INTERVAL_PRECISION>
-            </standard>
-            <extended>
-                <MAX_VALUE></MAX_VALUE>
-                <MIN_VALUE></MIN_VALUE>
-                <MAX_UTF8>2000</MAX_UTF8>
-                <EMULATED></EMULATED>
-            </extended>
-        </CHAR>
     </types>
     <ddl>
         <table>
@@ -351,9 +322,9 @@
                 <type name="UNIQUE" />
                 <type name="FOREIGN KEY" />
             </constraint>
-            <reference is="string">
+            <reference is="string" key="reference">
                 <token name="reference" is="literal" string="REFERENCES" />
-                <token name="table" is="variable" from="context" required="1" />
+                <token name="table" is="variable" quote="identifier" required="1" />
                 <token name="column_ref" is="element" />
                 <token name="on_delete" is="element_type" prefix="ON DELETE " />
                 <type name="CASCADE" />

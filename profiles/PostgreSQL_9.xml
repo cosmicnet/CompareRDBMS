@@ -44,8 +44,8 @@
             <extended>
                 <EMULATED></EMULATED>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>9E131072</MAX_VALUE>
-                <MIN_VALUE>-9E131072</MIN_VALUE>
+                <MAX_VALUE>9E999</MAX_VALUE>
+                <MIN_VALUE>-9E999</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -158,8 +158,8 @@
         <NUMERIC code="2">
             <extended>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>9E131072</MAX_VALUE>
-                <MIN_VALUE>-9E131072</MIN_VALUE>
+                <MAX_VALUE>9E999</MAX_VALUE>
+                <MIN_VALUE>-9E999</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -297,12 +297,6 @@
                 <token name="null" is="option" if="NULL" else="NOT NULL"/>
                 <token name="default" is="variable" prefix="DEFAULT " quote="literal"/>
             </column>
-            <column_ref is="list">
-                <prefix>(</prefix>
-                <suffix>)</suffix>
-                <delimiter>, </delimiter>
-                <item name="column_ref" is="variable" required="1" multiple="1" quote="identifier"/>
-            </column_ref>
             <data_type is="string">
                 <token name="type" is="type" required="1"/>
             </data_type>
@@ -336,9 +330,9 @@
                 <type name="UNIQUE KEY"/>
                 <type name="FOREIGN KEY"/>
             </constraint>
-            <reference is="string">
+            <reference is="string" key="reference">
                 <token name="reference" is="literal" string="REFERENCES"/>
-                <token name="table" is="variable" from="context" required="1"/>
+                <token name="table" is="variable" quote="identifier" required="1"/>
                 <token name="column_ref" is="element"/>
                 <token name="on_delete" is="element_type" prefix="ON DELETE "/>
                 <type name="CASCADE"/>

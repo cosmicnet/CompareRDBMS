@@ -349,9 +349,9 @@
                 <type name="UNIQUE KEY" />
                 <type name="FOREIGN KEY" />
             </constraint>
-            <reference is="string">
+            <reference is="string" key="reference">
                 <token name="reference" is="literal" string="REFERENCES" />
-                <token name="table" is="variable" required="1" />
+                <token name="table" is="variable" quote="identifier" required="1" />
                 <token name="column_ref" is="element" />
                 <token name="on_delete" is="element_type" prefix="ON DELETE " />
                 <type name="CASCADE" />

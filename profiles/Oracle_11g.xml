@@ -43,8 +43,8 @@
         <DECIMAL code="3">
             <extended>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>99999999999999999999999999999999999999E+125</MAX_VALUE>
-                <MIN_VALUE>-99999999999999999999999999999999999999E+125</MIN_VALUE>
+                <MAX_VALUE>99999999999999999999999999999999999999</MAX_VALUE>
+                <MIN_VALUE>-99999999999999999999999999999999999999</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -83,7 +83,7 @@
                 <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
                 <INTERVAL_PRECISION></INTERVAL_PRECISION>
                 <LITERAL_PREFIX></LITERAL_PREFIX>
-                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LITERAL_SUFFIX>d</LITERAL_SUFFIX>
                 <LOCAL_TYPE_NAME>Double</LOCAL_TYPE_NAME>
                 <MAXIMUM_SCALE></MAXIMUM_SCALE>
                 <MINIMUM_SCALE></MINIMUM_SCALE>
@@ -100,8 +100,8 @@
             <extended>
                 <EMULATED></EMULATED>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>3.40282E+38F</MAX_VALUE>
-                <MIN_VALUE>-3.40282E+38F</MIN_VALUE>
+                <MAX_VALUE>3.40282E+38</MAX_VALUE>
+                <MIN_VALUE>-3.40282E+38</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -112,7 +112,7 @@
                 <FIXED_PREC_SCALE>0</FIXED_PREC_SCALE>
                 <INTERVAL_PRECISION></INTERVAL_PRECISION>
                 <LITERAL_PREFIX></LITERAL_PREFIX>
-                <LITERAL_SUFFIX></LITERAL_SUFFIX>
+                <LITERAL_SUFFIX>f</LITERAL_SUFFIX>
                 <LOCAL_TYPE_NAME>Float</LOCAL_TYPE_NAME>
                 <MAXIMUM_SCALE></MAXIMUM_SCALE>
                 <MINIMUM_SCALE></MINIMUM_SCALE>
@@ -157,8 +157,8 @@
         <NUMERIC code="2">
             <extended>
                 <MAX_UTF8></MAX_UTF8>
-                <MAX_VALUE>99999999999999999999999999999999999999E+125</MAX_VALUE>
-                <MIN_VALUE>-99999999999999999999999999999999999999E+125</MIN_VALUE>
+                <MAX_VALUE>99999999999999999999999999999999999999</MAX_VALUE>
+                <MIN_VALUE>-99999999999999999999999999999999999999</MIN_VALUE>
             </extended>
             <standard>
                 <AUTO_UNIQUE_VALUE>0</AUTO_UNIQUE_VALUE>
@@ -296,8 +296,8 @@
             <column is="string">
                 <token name="name" is="variable" required="1" quote="identifier"/>
                 <token name="data_type" is="element" required="1"/>
-                <token name="null" is="option" if="NULL" else="NOT NULL"/>
                 <token name="default" is="variable" prefix="DEFAULT " quote="literal"/>
+                <token name="null" is="option" if="NULL" else="NOT NULL"/>
                 <token name="reference" is="element"/>
             </column>
             <data_type is="string">
@@ -329,9 +329,9 @@
                 <type name="UNIQUE KEY"/>
                 <type name="FOREIGN KEY"/>
             </constraint>
-            <reference is="string">
+            <reference is="string" key="reference">
                 <token name="reference" is="literal" string="REFERENCES"/>
-                <token name="table" is="variable" from="context" required="1"/>
+                <token name="table" is="variable" quote="identifier" required="1"/>
                 <token name="column_ref" is="element"/>
                 <token name="on_delete" is="element_type" prefix="ON DELETE "/>
                 <type name="CASCADE"/>
@@ -340,20 +340,14 @@
             <drop is="list">
                 <delimiter>;</delimiter>
                 <statement>1</statement>
-                <item name="drop_table" is="element" required="1"/>
-                <item name="drop_index" is="element" multiple="1"/>
-                <item name="drop_constraint" is="element" multiple="1"/>
-            </drop>
-            <drop is="list">
-                <delimiter>;</delimiter>
-                <statement>1</statement>
                 <item name="drop_constraint" key="constraint" is="element" multiple="1"/>
                 <item name="drop_index" key="index" is="element" multiple="1"/>
                 <item name="drop_table" key="definition" is="element" required="1"/>
             </drop>
             <drop_table is="string">
-                <token name="drop" is="literal" string="DROP TABLE IF EXISTS"/>
+                <token name="drop" is="literal" string="DROP TABLE"/>
                 <token name="name" is="variable" required="1" quote="identifier"/>
+                <token name="drop" is="literal" string="PURGE"/>
             </drop_table>
             <drop_index is="string">
                 <token name="alter" is="literal" string="ALTER IGNORE TABLE"/>
