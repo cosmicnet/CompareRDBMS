@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use Test::More qw(no_plan);
+use Test::More;
 use Data::Dumper;
 use Tie::IxHash;
 
@@ -33,7 +33,7 @@ sub create_test_schema {
         output => 'separate',
     );
     foreach my $sql ( @test_schema ) {
-        diag( $sql );
+        #diag( $sql );
         if ( $sql =~ /^DROP/ ) {
             TODO: {
                 local $TODO = 'Table drop commands will fail is this is the first test run';
@@ -77,16 +77,16 @@ foreach my $connection ( @$db_list ) {
         ## Test ranges
         # Get types from schema
         my $schema = $db_schema->schema();
-        my $column_list = $schema->{table_list}->{table}->[0]->{definition}->{column_list}->{column};
+        my $column_list = $db_schema->get_column_list('test_numeric');
         # Get ranges from profile
-        my $profile = $db_schema->profile();
+        my $type_map = $db_schema->get_type_map();
         my $sql_insert = 'INSERT INTO ' . $dbh->quote_identifier('test_numeric');
         foreach my $column ( @$column_list ) {
-            my $type = $column->{-data_type};
+            my $type = $column->{-type};
             # Get max/min from type details
             my ( $max_value, $min_value ) = (
-                $profile->{types}->{$type}->{extended}->{MAX_VALUE},
-                $profile->{types}->{$type}->{extended}->{MIN_VALUE}
+                $type_map->{$type}->{extended}->{MAX_VALUE},
+                $type_map->{$type}->{extended}->{MIN_VALUE}
             );
             # Clean off any thousands separators
             $max_value =~ s/,//g;
@@ -110,6 +110,6 @@ foreach my $connection ( @$db_list ) {
 }#foreach
 
 # Return statistics
-diag( Dumper(\%stats) );
+diag( Data::Dumper->Dump( [\%stats], ['STATS']) );
 
 done_testing();

@@ -65,7 +65,7 @@ my $schema = Schema->new(
 );
 my $ddl = $schema->create(
     drop   => 1,
-    output => 'grouped',
+    output => 'separate',
 );
 
 print $ddl;

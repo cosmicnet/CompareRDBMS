@@ -33,6 +33,8 @@ my $DEBUG = 0;
 
 =head1 METHODS
 
+=over
+
 =item new
 
     my $schema = new Schema();
@@ -85,9 +87,8 @@ sub dbh {
     $schema->profile( 'profiles/MySQL_5.xml' );
     my $profile = $schema->profile();
 
-Get/Set the RDBMS profile used for DDL generation. Note that the dbh must be set first,
-a check is ran to ensure the profile is valid for the DB driver. Getting the profile
-returns the internal Perl data structure for it, not the original XML.
+Set the RDBMS profile used for DDL generation. Note that the dbh must be set first,
+a check is ran to ensure the profile is valid for the DB driver.
 
 =cut
 
@@ -101,8 +102,18 @@ sub profile {
         croak( "$profile_file does not exist" ) unless -e $profile_file;
         # Load the profile
         my $xml = XML::TreePP->new();
-        $xml->set( force_array => [ qw( driver token item ) ] );
+        $xml->set( force_array => [ qw( driver type rule symbol map map_value ) ] );
         my $profile = $xml->parsefile( $profile_file )->{profile};
+        # Work the types, maps, and rules into hashes
+        my %type_hash = map { $_->{-name} => $_ } @{ $profile->{type_list}->{type} };
+        my %rule_hash = map { $_->{-name} => $_ } @{ $profile->{ddl}->{rule} };
+        my %map_hash;
+        foreach my $map ( @{ $profile->{ddl}->{map} } ) {
+            %{ $map_hash{ $map->{-name} } } = map { $_->{-name} => $_->{-value} } @{ $map->{map_value} };
+        }
+        $profile->{type} = \%type_hash;
+        $profile->{ddl}->{rule} = \%rule_hash;
+        $profile->{ddl}->{map} = \%map_hash;
         # Check the profile and DBH match
         my $match = grep { $self->{CONFIG}->{DBH}->{Driver}->{Name} eq $_ } @{ $profile->{drivers}->{driver} };
         croak( "$profile is not compatible with this database driver" ) unless $match;
@@ -112,17 +123,31 @@ sub profile {
         # Check schema is loaded
         croak( "No profile has been loaded" ) unless ref $self->{CONFIG}->{PROFILE};
     }
-    return $self->{CONFIG}->{PROFILE};
+    return 1;
+}#sub
+
+
+=item get_type_map
+
+    my $type_hashr = $schema->get_type_map();
+
+Get the list of available types with details.
+
+=cut
+
+sub get_type_map {
+    my $self = shift;
+    # Check the profile has been loaded
+    croak( 'No profile loaded' ) unless ref( $self->{CONFIG}->{PROFILE} );
+    return $self->{CONFIG}->{PROFILE}->{type};
 }#sub
 
 
 =item schema
 
     $schema->schema( 'db_schema.xml' );
-    my $db_schema = $schema->schema();
 
-Get/Set the generic DB schema. Getting the schema returns the internal
-Perl data structure for it, not the original XML.
+Set the generic DB schema from an XML file.
 
 =cut
 
@@ -134,7 +159,7 @@ sub schema {
         croak( "Schema $schema_file does not exist" ) unless -e $schema_file;
         # Load the schema
         my $xml = XML::TreePP->new();
-        $xml->set( force_array => [ qw( table column column_ref index constraint ) ] );
+        $xml->set( force_array => [ qw( table column column index unique foreign ) ] );
         my $schema = $xml->parsefile( $schema_file )->{schema};
         $self->{CONFIG}->{SCHEMA} = $schema;
     }
@@ -142,7 +167,27 @@ sub schema {
         # Check schema is loaded
         croak( "No schema has been loaded" ) unless ref $self->{CONFIG}->{SCHEMA};
     }
-    return $self->{CONFIG}->{SCHEMA};
+    return 1;
+}#sub
+
+
+=item get_column_list
+
+    my $column_list = $schema->get_column_list( $table );
+
+Returns a list of columns from the loaded schema for the passed table.
+
+=cut
+
+sub get_column_list {
+    my $self = shift;
+    my ( $table ) = @_;
+    # Check the schema has been loaded
+    croak( 'No schema loaded' ) unless ref $self->{CONFIG}->{SCHEMA};
+    my ( $table_info ) = grep { $_->{-name} eq $table } @{ $self->{CONFIG}->{SCHEMA}->{table_list}->{table} };
+    # Check the table exists
+    croak( "Table '$table' does not exist" ) unless $table_info;
+    return $table_info->{column_list}->{column};
 }#sub
 
 
@@ -154,7 +199,7 @@ Turn the loaded DB schema into DDL statements for the profiles database
 
 Optional arguments:
 
-    output => grouped || separate # Pass statements back grouped together in a string, or as an array
+    output => grouped || separate # Pass statements back grouped together by table, or as an array
     drop => 1 || 0 # Prepend drop table statements
 
 =cut
@@ -178,79 +223,75 @@ sub create {
         tables           => [],
         indexes          => [],
         constraints      => [],
-        extras           => [],
         drop_tables      => [],
         drop_indexes     => [],
         drop_constraints => [],
-        drop_extras      => [],
     };
 
     my $profile = $self->{CONFIG}->{PROFILE};
 
     # Process tables
     my $table_listr = $self->{CONFIG}->{SCHEMA}->{table_list}->{table};
-    my $ddl = '';
+    my @ddl;
     foreach my $table ( @$table_listr ) {
-        print "Table: $table->{definition}->{-name}\n" if $DEBUG;
-        $self->{context}->{table} = $table->{definition}->{-name};
-        $self->{context}->{indent} = -2;
+        print "Table: $table->{-name}\n" if $DEBUG;
+        $self->{context}->{table} = $table;
+        $self->{context}->{indent} = 0;
+        # The output SQL can either be grouped together by table, or separted
         if ( $param{output} eq 'grouped' ) {
             # Drop
-            $ddl .= $self->_process_element( $profile->{ddl}->{table}->{drop}, $table ) if $param{drop};
+            push( @ddl, @{ $self->_process_rule( $profile->{ddl}->{rule}->{drop}, $table ) } ) if $param{drop};
             # Create
-            $ddl .= $self->_process_element( $profile->{ddl}->{table}->{create}, $table );
+            push( @ddl, @{ $self->_process_rule( $profile->{ddl}->{rule}->{create}, $table ) } );
         }
         else {
-
             # Table definition
-            push( @{ $self->{ddl}->{tables} }, $self->_process_element( $profile->{ddl}->{table}->{definition}, $table->{definition} ) );
-            push( @{ $self->{ddl}->{drop_tables} }, $self->_process_element( $profile->{ddl}->{table}->{drop_table}, $table->{definition} ) ) if $param{drop};
+            push( @{ $self->{ddl}->{tables} }, $self->_process_rule( $profile->{ddl}->{rule}->{create_table}, $table ) );
+            push( @{ $self->{ddl}->{drop_tables} }, $self->_process_rule( $profile->{ddl}->{rule}->{drop_table}, $table ) ) if $param{drop};
 
-            # Loop indexes
-            foreach my $index ( @{ $table->{index} } ) {
-                push( @{ $self->{ddl}->{indexes} }, $self->_process_element( $profile->{ddl}->{table}->{index}, $index ) );
-                push( @{ $self->{ddl}->{drop_indexes} }, $self->_process_element( $profile->{ddl}->{table}->{drop_index}, $index ) ) if $param{drop};
-            }#foreach
+            # Indexes
+            push( @{ $self->{ddl}->{indexes} }, @{ $self->_process_rule( $profile->{ddl}->{rule}->{create_index_list}, $table->{index_list} ) } ) if $table->{index_list};
+            push( @{ $self->{ddl}->{drop_indexes} }, @{ $self->_process_rule( $profile->{ddl}->{rule}->{drop_index_list}, $table->{index_list} ) } ) if $param{drop} && $table->{index_list};
 
-            # Loop constraints
-            foreach my $constraint ( @{ $table->{constraint} } ) {
-                push( @{ $self->{ddl}->{indexes} }, $self->_process_element( $profile->{ddl}->{table}->{constraint}, $constraint ) );
-                push( @{ $self->{ddl}->{drop_indexes} }, $self->_process_element( $profile->{ddl}->{table}->{drop_constraint}, $constraint ) ) if $param{drop};
-            }#foreach
-
+            # Constraints
+            push( @{ $self->{ddl}->{constraints} }, @{ $self->_process_rule( $profile->{ddl}->{rule}->{create_constraint_list}, $table->{constraint_list} ) } );
+            push( @{ $self->{ddl}->{drop_constraints} }, @{ $self->_process_rule( $profile->{ddl}->{rule}->{drop_constraint_list}, $table->{constraint_list} ) } ) if $param{drop};
         }#else
     }#foreach
 
-    return $ddl if $param{output} eq 'grouped';
+    if ( $param{output} eq 'grouped' ) {
+        if ( wantarray ) {
+            return @ddl;
+        }
+        else {
+            return join( ";\n", @ddl) . ";\n";
+        }
+    }#if
 
     # Are we returning the separate statements as an array or string?
     if ( wantarray ) {
         return (
             @{ $self->{ddl}->{drop_constraints} },
-            @{ $self->{ddl}->{drop_extras} },
             @{ $self->{ddl}->{drop_indexes} },
             @{ $self->{ddl}->{drop_tables} },
             @{ $self->{ddl}->{tables} },
             @{ $self->{ddl}->{indexes} },
             @{ $self->{ddl}->{constraints} },
-            @{ $self->{ddl}->{extras} },
         );
     }#if
     else {
         my $return;
         $return .=
-            join( ";\n", @{ $self->{ddl}->{drop_constraints} } ) . "\n\n" .
-            join( ";\n", @{ $self->{ddl}->{drop_extras} } ) . "\n\n" .
-            join( ";\n", @{ $self->{ddl}->{drop_indexes} } ) . "\n\n" .
-            join( ";\n\n", @{ $self->{ddl}->{drop_tables} } ) . "\n" if $param{drop};
+            join( ";\n", @{ $self->{ddl}->{drop_constraints} } ) . "\n" .
+            join( ";\n", @{ $self->{ddl}->{drop_indexes} } ) . "\n" .
+            join( ";\n", @{ $self->{ddl}->{drop_tables} } ) . ";\n" if $param{drop};
         $return .=
-            join( ";\n\n", @{ $self->{ddl}->{tables} } ) . "\n" .
-            join( ";\n", @{ $self->{ddl}->{indexes} } ) . "\n\n" .
-            join( ";\n", @{ $self->{ddl}->{constraints} } ) . "\n\n" .
-            join( ";\n", @{ $self->{ddl}->{extras} } );
+            join( ";\n", @{ $self->{ddl}->{tables} } ) . "\n" .
+            join( ";\n", @{ $self->{ddl}->{indexes} } ) . "\n" .
+            join( ";\n", @{ $self->{ddl}->{constraints} } ) . ";\n";
         return $return;
     }#else
-}
+}#sub
 
 
 =item quote
@@ -272,7 +313,7 @@ sub quote {
 	    return "'$value'";
 	}
 
-    my $ti = $self->{CONFIG}->{PROFILE}->{types}->{$type}->{standard};
+    my $ti = $self->{CONFIG}->{PROFILE}->{type}->{$type}->{standard};
     # Validate the type is known
     croak( "Cannot quote type '$type' as it is unknown for this profile") unless ref $ti;
     my $lp = $ti->{LITERAL_PREFIX} || '';
@@ -283,152 +324,244 @@ sub quote {
 	$value =~ s/$lp/$lp$lp/g
 		if $lp && $lp eq $ls && ($lp eq "'" || $lp eq '"');
 	return "$lp$value$ls";
-}
+}#sub
 
+=back
 
 =head1 INTERNAL FUNCTIONS
 
-=head2 _process_element
+=over
 
-Takes a database schema element, and the corresponding profile element syntax definition
-and produces an SQL statement or list of statements. Element types are either string or list.
+=item _process_rule
+
+Takes a database schema element, and the corresponding profile syntax rule definition
+and produces an SQL statement or list of statements.
+Rule types are either statement_list, statement, string_group or string.
 
 =cut
 
-sub _process_element {
+sub _process_rule {
     my $self = shift;
-    my ( $element, $input ) = @_;
-    print "Element: $element->{-is}\n" if $DEBUG;
-    # Dispatch to the appropriate element processing routine
-    if ( $element->{-is} eq 'string' ) {
+    my ( $rule, $input ) = @_;
+    $rule->{-class} ||= 'string';
+    print "Rule: $rule->{-class}\n" if $DEBUG;
+    # Dispatch to the appropriate rule processing routine
+    if ( $rule->{-class} eq 'statement_list' ) {
+        return $self->_process_statement_list(
+            $rule,
+            $input,
+        );
+    }
+    # String components grouped together
+    elsif ( $rule->{-class} eq 'string_group' ) {
+        my $return = $self->_process_rule_group(
+            $rule,
+            $input,
+        );
+        return "$return";
+    }
+    # Default to string
+    else {
         return $self->_process_string(
-            $element,
-            $element->{-key} ? $input->{ $element->{-key} } : $input,
+            $rule,
+            $input,
         );
     }
-    elsif ( $element->{-is} eq 'list' ) {
-        return $self->_process_element_list(
-            $element,
-            $element->{-key} ? $input->{ $element->{-key} } : $input,
-        );
-    }
-}
+}#sub
 
 
-=head2 _process_string
+=item _process_statement_list
 
-Processes string elements to produce an SQL statement.
+Processes rules to produce a list of SQL statements.
+
+=cut
+
+sub _process_statement_list {
+    my $self = shift;
+    my ( $format, $input ) = @_;
+    print "Statement list\nFormat: " . Dumper( $format ) . 'Input: ' . Dumper( $input ) if $DEBUG > 2;
+    my @statement_list;
+    # Loop through symbols
+    foreach my $symbol ( @{ $format->{symbol} } ) {
+        if ( $DEBUG > 1 ) {
+            print "  Symbol: $symbol->{-type} ($symbol->{-name})";
+        }
+        # See what type of symbol this is and process accordingly
+        if ( $symbol->{-type} eq 'rule' ) {
+            my $key = $symbol->{-subcontext} || $symbol->{-list} || $symbol->{-name};
+            my $variable;
+            # See if the name, subtext, or list indicate a part of the input
+            if ( $key ) {
+                $variable = defined $input->{-$key} ? $input->{-$key} : $input->{$key};
+            }
+            # Without a value set the rule should run with the current input
+            unless ( $variable || $symbol->{-subcontext} || $symbol->{-list} ) {
+                $variable = $input;
+            }
+            if ( $DEBUG > 1 ) {
+                print "  Subcontext: $symbol->{-subcontext} Variable: $variable\n";
+            }
+            # Does this rule have input to run
+            if ( $variable ) {
+                unless ( $symbol->{-list} ) {
+                    $variable = [ $variable ];
+                }
+                # List input will need to be looped
+                foreach my $value ( @$variable ) {
+                    # Process the rule and add to the statement list
+                    my $rule = $self->_process_rule(
+                        $self->{CONFIG}->{PROFILE}->{ddl}->{rule}->{ $symbol->{-name} },
+                        $value,
+                    );
+                    if ( ref $rule ) {
+                        push( @statement_list, @$rule );
+                    }
+                    else {
+                        push( @statement_list, $rule );
+                    }
+                }#foreach
+            }#if
+            # Error if this isn't conditional
+            elsif ( ! $symbol->{-condition} ) {
+                croak( "$self->{context}->{table}->{-name} $symbol->{-name} $key is missing" );
+            }
+        }#if
+    }#foreach
+    return \@statement_list;
+}#sub
+
+
+=item _process_string
+
+Processes string elements to produce an SQL string.
 
 =cut
 
 sub _process_string {
     my $self = shift;
-    my ( $format, $input ) = @_;
-    print 'Format: ' . Dumper( $format ) . 'Input: ' . Dumper( $input ) if $DEBUG > 2;
-    my @token_list;
-    # Loop through tokens
-    foreach my $token ( @{ $format->{token} } ) {
-        my $name = $token->{-name};
-        if ( $DEBUG > 1 ) {
-            my $value = defined $input->{-$name} ? $input->{-$name} : $input->{$name};
-            $value ||= '';
-            print "  Token: $name is $token->{-is} input: $value\n";
-        }
-        # See what type of token this is a process accordingly
-        if ( $token->{-is} eq 'literal' ) {
-            push( @token_list, $token->{-string} );
-        }
-        elsif ( $token->{-is} eq 'option' ) {
-            if ( $input->{-$name} ) {
-                push( @token_list, $token->{-if} ) if $token->{-if};
-            }
-            else {
-                push( @token_list, $token->{-else} ) if $token->{-else};
-            }
-        }
-        elsif ( $token->{-is} eq 'variable' ) {
-            # Variables can be an attribute, tag or context
-            $token->{-from} ||= 'self';
-            my $variable;
-            if ( $token->{-from} eq 'context' ) {
-                $variable = $self->{context}->{$name};
-            }
-            else {
-                $variable = defined $input->{-$name} ? $input->{-$name} : $input->{$name};
-            }
-            if ( defined $variable ) {
-                # Variables can have a modifier to adjusts them
-                if ( $token->{modifier} ) {
-                    my $mod_option = $token->{modifier}->{-name};
-                    my $mod_var = defined $input->{-$mod_option} ? $input->{-$mod_option} : $input->{$mod_option};
-                    if ( defined $mod_var ) {
-                        $variable = $token->{modifier}->{-prepend} . $variable if $token->{modifier}->{-prepend};
-                        $variable .= $token->{modifier}->{-append} if $token->{modifier}->{-append};
-                    }
+    my ( $rule, $input ) = @_;
+    print 'Format: ' . Dumper( $rule ) . 'Input: ' . Dumper( $input ) if $DEBUG > 2;
+    my @symbol_list;
+    # Loop through the rules symbols
+    foreach my $symbol ( @{ $rule->{symbol} } ) {
+        my $name = $symbol->{-name} || $symbol->{-condition} || '';
+        print "  Symbol: $symbol->{-type} ($name) " if $DEBUG > 1;
+        # See what type of symbol this is and process accordingly
+        if ( $symbol->{-type} eq 'literal' ) {
+            my $value;
+            # Literals can be conditional and have a true or false value
+            if ( $symbol->{-condition} ) {
+                if ( $input->{ -$symbol->{-condition} } || $input->{ $symbol->{-condition} } ) {
+                    $value = $symbol->{-true} if $symbol->{-true};
                 }
-                # Some variables should be properly quoted (DB specific quoting is used)
-                if ( $token->{-quote} ) {
-                    if ( $token->{-quote} eq 'literal' ) {
-                        $variable = $self->{CONFIG}->{DBH}->quote($variable);
+                else {
+                    $value = $symbol->{-false} if $symbol->{-false};
+                }
+            }
+            # Otherwise they are always inserted with a fixed value
+            else {
+                $value = $symbol->{-value};
+            }
+            print "Value: $value\n" if $DEBUG > 1;
+            # Insert value, possibly with quoting
+            if ( $value ) {
+                if ( $symbol->{-quote} ) {
+                    if ( $symbol->{-quote} eq 'literal' ) {
+                        $value = $self->{CONFIG}->{DBH}->quote($value);
                     }
-                    elsif ( $token->{-quote} eq 'identifier' ) {
-                        $variable = $self->{CONFIG}->{DBH}->quote_identifier($variable);
+                    elsif ( $symbol->{-quote} eq 'identifier' ) {
+                        $value = $self->{CONFIG}->{DBH}->quote_identifier($value);
                     }
                 }#if
-                $variable = $token->{-prefix} . $variable if $token->{-prefix};
-                $variable .= $token->{-suffix} if $token->{-suffix};
-                push( @token_list, $variable );
+                push( @symbol_list, $value );
+            }#if
+        }#if
+        elsif ( $symbol->{-type} eq 'variable' ) {
+            # Variables can be an attribute, from context, or in a map
+            my $value;
+            if ( $symbol->{-context} ) {
+                $value = $self->{context}->{ $symbol->{-context} }->{ -$symbol->{-name} };
+            }
+            elsif ( $symbol->{-map} ) {
+                $value = $self->{CONFIG}->{PROFILE}->{ddl}->{map}->{ $symbol->{-map} }->{ $input };
+                croak( "Type $symbol->{-map} not supported") unless $value;
+            }
+            else {
+                $value = defined $input->{-$name} ? $input->{-$name} : $input->{$name};
+            }
+            print "Value: $value\n" if $DEBUG > 1;
+            if ( defined $value ) {
+                # Variables can have a modifier that adjusts them
+                if ( $symbol->{modifier} ) {
+                    my $mod_option = $symbol->{modifier}->{-condition};
+                    my $mod_var = defined $input->{-$mod_option} ? $input->{-$mod_option} : $input->{$mod_option};
+                    if ( defined $mod_var ) {
+                        $value = $symbol->{modifier}->{-prepend} . $value if $symbol->{modifier}->{-prepend};
+                        $value .= $symbol->{modifier}->{-append} if $symbol->{modifier}->{-append};
+                    }
+                }
+                $value = $symbol->{-prepend} . $value if $symbol->{-prepend};
+                $value .= $symbol->{-append} if $symbol->{-append};
+                # Some variables should be properly quoted (DB specific quoting is used)
+                if ( $symbol->{-quote} ) {
+                    if ( $symbol->{-quote} eq 'literal' ) {
+                        $value = $self->{CONFIG}->{DBH}->quote($value);
+                    }
+                    elsif ( $symbol->{-quote} eq 'identifier' ) {
+                        $value = $self->{CONFIG}->{DBH}->quote_identifier($value);
+                    }
+                }#if
+                $value = $symbol->{-prefix} . $value if $symbol->{-prefix};
+                $value .= $symbol->{-suffix} if $symbol->{-suffix};
+                push( @symbol_list, $value );
             }#elsif
             # Make sure required elements exist
-            elsif ( $token->{-required} ) {
-                croak( "Token $name is required" );
+            elsif ( ! $symbol->{-condition} ) {
+                croak( "$self->{context}->{table}->{-name} $rule->{-name} $symbol->{-type} $symbol->{-name} $name is required" );
             }
         }
-        # Some tokens may be elements themselves, in which case dispatch
-        elsif ( $token->{-is} eq 'element' ) {
-            my $variable = defined $input->{-$name} ? $input->{-$name} : $input->{$name};
-            if ( $variable ) {
-                my $element = $self->_process_element(
-                    $self->{CONFIG}->{PROFILE}->{ddl}->{table}->{$name},
-                    $input,
+        # Some symbols may be rules themselves, in which case dispatch
+        elsif ( $symbol->{-type} eq 'rule' ) {
+            my $key = $symbol->{-condition} || $symbol->{-subcontext} || $symbol->{-name};
+            my $value;
+            # See if the name, condition, or subcontext indicate a part of the input
+            if ( $key ) {
+                $value = defined $input->{-$key} ? $input->{-$key} : $input->{$key};
+            }
+            # With out a value set the rule should run with the current input
+            unless ( $value || $symbol->{-condition} || $symbol->{-subcontext} ) {
+                $value = $input;
+            }
+            print "Value: $value\n" if $DEBUG > 1;
+            if ( $value ) {
+                my $rule = $self->_process_rule(
+                    $self->{CONFIG}->{PROFILE}->{ddl}->{rule}->{$name},
+                    $value,
                 );
-                $element = $token->{-prefix} . $element if $token->{-prefix};
-                $element = $element . $token->{-suffix} if $token->{-suffix};
-                push( @token_list, $element );
+                push( @symbol_list, $rule );
             }
-            elsif ( $token->{-required} ) {
-                croak( "Token $name is required" );
+            elsif ( ! $symbol->{-condition} ) {
+                croak( "In table '$self->{context}->{table}->{-name}' $rule->{-name} $symbol->{-type} $symbol->{-name} $key is required" );
             }
         }
-        # Some tokens will have limited options
-        elsif ( $token->{-is} eq 'element_type' ) {
-            if ( $input->{-$name} ) {
-                my $type_string = $self->_process_element_type( $format->{type}, $input->{-$name} );
-                $type_string = $token->{-prefix} . $type_string if $token->{-prefix};
-                $type_string = $type_string . $token->{-suffix} if $token->{-suffix};
-                push( @token_list, $type_string );
-            }
-            elsif ( $token->{-required} ) {
-                croak( "Token $name is required" );
-            }
-        }
-        # Some tokens will be for types, process using the type details
-        elsif ( $token->{-is} eq 'type' ) {
-            if ( $input->{-data_type} ) {
+        # Some symbols will be for types, process using the type details
+        elsif ( $symbol->{-type} eq 'special' ) {
+            print "Value: $input->{ -$symbol->{-name} }\n" if $DEBUG > 1;
+            if ( $input->{ -$symbol->{-name} } ) {
                 my $type_string = $self->_process_type( $input );
-                push( @token_list, $type_string );
+                push( @symbol_list, $type_string );
             }
-            elsif ( $token->{-required} ) {
-                croak( "Token $name is required" );
+            else {
+                croak( "In table '$self->{context}->{table}->{-name}' $rule->{-name} $symbol->{-type} $symbol->{-name} $symbol->{-name} is required" );
             }
         }
     }
-    my $return = join( ' ', @token_list );
+    my $return = join( ' ', @symbol_list );
     return $return;
-}
+}#sub
 
 
-=head2 _process_type
+=item _process_type
 
 Processes data types to produce a matching SQL data type.
 
@@ -438,9 +571,9 @@ sub _process_type {
     my $self = shift;
     my ( $input ) = @_;
     # Get type details from the profile
-    my $type_details = $self->{CONFIG}->{PROFILE}->{types}->{ $input->{-data_type} };
+    my $type_details = $self->{CONFIG}->{PROFILE}->{type}->{ $input->{-type} };
     # Check the type is supported
-    croak( "Type $input->{-data_type} not supported") unless ref $type_details;
+    croak( "Type $input->{-type} not supported") unless ref $type_details;
     my $type_string = $type_details->{standard}->{TYPE_NAME};
     # Process create params if the type definition allows it
     if ( $type_details->{standard}->{CREATE_PARAMS} ) {
@@ -465,97 +598,74 @@ sub _process_type {
 }#sub
 
 
-=head2 _process_element_type
+=item _process_rule_group
 
-Processes a limited variable field to produce a matching RDBMS specific option.
-
-=cut
-
-sub _process_element_type {
-    my $self = shift;
-    my ( $type_list, $value ) = @_;
-    print 'Element type: ' . Dumper( $type_list ) . "Value: $value" if $DEBUG > 2;
-    # Loop the valid options
-    foreach my $type ( @$type_list ) {
-        return $type->{-name} if $type->{-name} eq $value;
-    }
-    croak( "Type $value not supported");
-}#sub
-
-
-=head2 _process_element_list
-
-Processes a list of different element types to produce SQL.
+Processes several string types and groups them together.
 
 =cut
 
-sub _process_element_list {
+sub _process_rule_group {
     my $self = shift;
-    my ( $element, $input ) = @_;
+    my ( $rule_group, $input ) = @_;
     my @item_list;
-    print 'Element: ' . Dumper( $element ) . 'Input: ' . Dumper( $input ) if $DEBUG > 2;
     $self->{context}->{indent} += 2;
-    # Loop types of item
-    foreach my $item_type ( @{ $element->{item} } ) {
-        my $name = $item_type->{-name};
-        my $key = $item_type->{-key} || $name;
+    print 'Rule-group: ' . Dumper( $rule_group ) . "Indent: $self->{context}->{indent} Input: " . Dumper( $input ) if $DEBUG > 2;
+    # Loop types of symbol
+    foreach my $symbol ( @{ $rule_group->{symbol} } ) {
+        my $name = $symbol->{-name};
         # Prepare the element variable name to check if this item exists
-        my $variable;
-        $item_type->{-from} ||= 'self';
-        if ( $item_type->{-from} eq 'context' ) {
-            $variable = $self->{context}->{$key};
-        }
-        elsif ( $item_type->{-from} eq 'this' ) {
-            $variable = $input;
+        my $value;
+        if ( $symbol->{-list} ) {
+            $value = $input->{ $symbol->{-list} };
         }
         else {
-            $variable = $input->{$key}
+            $value = $input;
         }
-        print "  Item: $name Key: $key Var: $variable\n" if $DEBUG > 1;
-        if ( $variable ) {
+        print "  Symbol: $symbol Value: " . Dumper( $value ) . "\n" if $DEBUG > 1;
+        if ( $value ) {
             # Turn into array
-            my $item_listr = $item_type->{-multiple} ? $variable : [ $variable ];
-            print '    Has ' . @$item_listr . "\n" if $DEBUG > 1;
+            my $input_listr = ref $value eq 'ARRAY' ? $value : [ $value ];
+            print '    Has ' . @$input_listr . "\n" if $DEBUG > 1;
             # Loop items in input
-            foreach my $item ( @$item_listr ) {
-                # If this item is an element, process as an element
-                if ( $item_type->{-is} eq 'element' ) {
-                    my $element = $self->_process_element(
-                        $self->{CONFIG}->{PROFILE}->{ddl}->{table}->{$name},
+            foreach my $item ( @$input_listr ) {
+                # If this item is a rule, process as such
+                if ( $symbol->{-type} eq 'rule' ) {
+                    my $return = $self->_process_rule(
+                        $self->{CONFIG}->{PROFILE}->{ddl}->{rule}->{$name},
                         $item,
                     );
                     if ( $self->{CONFIG}->{FORMAT} ) {
                         my $indent = ' ' x $self->{context}->{indent};
-                        $element = "$indent$element";
+                        $return = "$indent$return";
                     }
-                    push( @item_list, $element );
+                    push( @item_list, $return );
                 }
                 # If this is just a variable, process as one
-                elsif ( $item_type->{-is} eq 'variable' ) {
-                    # Variables is the item itself
-                    my $variable = $item;
-                    if ( $item_type->{-quote} ) {
-                        if ( $item_type->{-quote} eq 'literal' ) {
-                            $variable = $self->{CONFIG}->{DBH}->quote($variable);
+                elsif ( $symbol->{-type} eq 'variable' ) {
+                    # Variable is the item itself
+                    my $value = $item;
+                    if ( ref $item ) {
+                        $value = $item->{-value} || $item->{-name};
+                    }
+                    if ( $symbol->{-quote} ) {
+                        if ( $symbol->{-quote} eq 'literal' ) {
+                            $value = $self->{CONFIG}->{DBH}->quote($value);
                         }
-                        elsif ( $item_type->{-quote} eq 'identifier' ) {
-                            $variable = $self->{CONFIG}->{DBH}->quote_identifier($variable);
+                        elsif ( $symbol->{-quote} eq 'identifier' ) {
+                            $value = $self->{CONFIG}->{DBH}->quote_identifier($value);
                         }
                     }#if
-                    # Variables might have a prefix or suffix
-                    $variable = $item_type->{-prefix} . $variable if $item_type->{-prefix};
-                    $variable .= $item_type->{-suffix} if $item_type->{-suffix};
                     if ( $self->{CONFIG}->{FORMAT} ) {
                         my $indent = ' ' x $self->{context}->{indent};
-                        $variable = "$indent$variable";
+                        $value = "$indent$value";
                     }
-                    push( @item_list, $variable );
+                    push( @item_list, $value );
                 }
             }#foreach
         }#if
         # Check if the item is required or not
-        elsif ( $item_type->{-required} ) {
-            croak( "Item $name is required" );
+        else {
+            croak( "In table '$self->{context}->{table}->{-name}' $rule_group->{-name} $symbol->{-type} $symbol->{-name} $name is required" );
         }
     }#foreach
     $self->{context}->{indent} -= 2;
@@ -565,23 +675,26 @@ sub _process_element_list {
 
     # Format list as a string and return
     my $indent = ' ' x $self->{context}->{indent};
-    my $delimiter = $element->{delimiter};
+    my $delimiter = $rule_group->{delimiter};
     # Check for prefix and suffix
-    my $prefix = defined $element->{prefix} ? $element->{prefix} : '';
-    my $suffix = defined $element->{suffix} ? $element->{suffix} : '';
+    my $prefix = defined $rule_group->{prefix} ? $rule_group->{prefix} : '';
+    my $suffix = defined $rule_group->{suffix} ? $rule_group->{suffix} : '';
     # Apply extra formatting if needed
     if ( $self->{CONFIG}->{FORMAT} ) {
         $delimiter .= "\n";
         $prefix .= "\n" if $prefix;
     }
-    # Joing string together and return
+    # Join string together and return
     my $return = join( $delimiter, @item_list );
     $return = $prefix . $return if $prefix;
-    $return .= "\n$indent" if $self->{CONFIG}->{FORMAT} && ! $element->{statement};
+    $return .= "\n$indent" if $self->{CONFIG}->{FORMAT} && ! $rule_group->{statement};
     $return = $return . $suffix if $suffix;
-    $return .= $element->{statement} ? ";\n" : '';
+    $return .= $rule_group->{statement} ? ";\n" : '';
     return $return;
 }#sub
 
+=back
+
+=cut
 
 1;

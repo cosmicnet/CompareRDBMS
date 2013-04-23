@@ -1,42 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <schema>
     <table_list>
-        <table>
-            <definition name="tbl_sample">
-                <comment>Numeric column table</comment>
-                <column_list>
-                    <column name="col_tiny" data_type="TINYINT" default="0"/>
-                    <column name="col_small" data_type="SMALLINT" default="0"/>
-                    <column name="col_int" data_type="INTEGER" default="0"/>
-                    <column name="col_big" data_type="BIGINT" default="0"/>
-                    <column name="col_num" data_type="NUMERIC" default="0">
-                        <param>
-                            <precision>max</precision>
-                        </param>
-                    </column>
-                    <column name="col_dec" data_type="DECIMAL" default="0">
-                        <param>
-                            <precision>max</precision>
-                        </param>
-                    </column>
-                    <column name="col_real" data_type="REAL" default="0"/>
-                    <column name="col_float" data_type="FLOAT" default="0"/>
-                    <column name="col_double" data_type="DOUBLE" default="0"/>
-                </column_list>
-            </definition>
-            <index name="tiny_small">
-                <column_ref>col_tiny</column_ref>
-                <column_ref>col_small</column_ref>
-            </index>
-            <constraint type="PRIMARY KEY">
-                <column_ref>col_int</column_ref>
-            </constraint>
-            <constraint type="FOREIGN KEY" name="cs_id">
-                <column_ref>col_big</column_ref>
-                <reference table="tbl_foreign" on_delete="CASCADE">
-                    <column_ref>id</column_ref>
-                </reference>
-            </constraint>
+        <table name="tbl_foreign">
+            <comment>Numeric column table</comment>
+            <column_list>
+                <column name="col_big" type="BIGINT" default="0"/>
+            </column_list>
+            <constraint_list>
+                <primary>
+                    <column>col_big</column>
+                </primary>
+            </constraint_list>
+        </table>
+        <table name="tbl_sample">
+            <comment>Numeric column table</comment>
+            <column_list>
+                <column name="col_tiny" type="TINYINT" default="0"/>
+                <column name="col_small" type="SMALLINT" default="0"/>
+                <column name="col_int" type="INTEGER" default="0"/>
+                <column name="col_big" type="BIGINT" default="0"/>
+                <column name="col_num" type="NUMERIC" default="0">
+                    <param>
+                        <precision>max</precision>
+                    </param>
+                </column>
+                <column name="col_dec" type="DECIMAL" default="0">
+                    <param>
+                        <precision>max</precision>
+                    </param>
+                </column>
+                <column name="col_real" type="REAL" default="0"/>
+                <column name="col_float" type="FLOAT" default="0"/>
+                <column name="col_double" type="DOUBLE" default="0"/>
+            </column_list>
+            <index_list>
+                <index name="tiny_small" type="btree">
+                    <column>col_tiny</column>
+                    <column>col_small</column>
+                </index>
+            </index_list>
+            <constraint_list>
+                <primary>
+                    <column>col_int</column>
+                </primary>
+				<unique name="uni_col">
+					<column name="col_num"/>
+				</unique>
+                <foreign name="for_key">
+                    <column>col_big</column>
+                    <table_ref name="tbl_foreign">
+                        <column>col_big</column>
+                    </table_ref>
+                </foreign>
+            </constraint_list>
         </table>
     </table_list>
 </schema>

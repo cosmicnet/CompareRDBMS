@@ -1,29 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <schema>
     <table_list>
-        <table>
-            <definition name="test_numeric">
-                <comment>Numeric column table</comment>
-                <column_list>
-                    <column name="col_tiny" data_type="TINYINT" default="0"/>
-                    <column name="col_small" data_type="SMALLINT" default="0"/>
-                    <column name="col_int" data_type="INTEGER" default="0"/>
-                    <column name="col_big" data_type="BIGINT" default="0"/>
-                    <column name="col_num" data_type="NUMERIC" default="0">
-                        <param>
-                            <precision>max</precision>
-                        </param>
-                    </column>
-                    <column name="col_dec" data_type="DECIMAL" default="0">
-                        <param>
-                            <precision>max</precision>
-                        </param>
-                    </column>
-                    <column name="col_real" data_type="REAL" default="0"/>
-                    <column name="col_float" data_type="FLOAT" default="0"/>
-                    <column name="col_double" data_type="DOUBLE" default="0"/>
-                </column_list>
-            </definition>
+        <table name="test_numeric">
+			<comment>Numeric column table</comment>
+			<column_list>
+				<column name="col_tiny" type="TINYINT" default="0"/>
+				<column name="col_small" type="SMALLINT" default="0"/>
+				<column name="col_int" type="INTEGER" default="0"/>
+				<column name="col_big" type="BIGINT" default="0"/>
+				<column name="col_num" type="NUMERIC" default="0">
+					<param>
+						<precision>max</precision>
+					</param>
+				</column>
+				<column name="col_dec" type="DECIMAL" default="0">
+					<param>
+						<precision>max</precision>
+					</param>
+				</column>
+				<column name="col_real" type="REAL" default="0"/>
+				<column name="col_float" type="FLOAT" default="0"/>
+				<column name="col_double" type="DOUBLE" default="0"/>
+			</column_list>
         </table>
     </table_list>
 </schema>
