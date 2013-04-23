@@ -233,6 +233,7 @@ $(document).ready(function() {
 
             }
         });
+        return false;
     });
 
     function copy_driver_type_check( db, profile_type ) {

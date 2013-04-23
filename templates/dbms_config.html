@@ -1,10 +1,8 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>CompareRDBMS - Config</title>
-    <link rel="stylesheet" type="text/css" href="static/css/default.css">
-    <script src="/static/js/jquery-1.9.0.js"></script>
-    <script src="/static/js/json2.js"></script>
-    <script src="/static/js/main.js"></script>
+    <!-- TMPL_INCLUDE NAME="head.html" -->
     <script>
         // Define a global variable that can be picked up by the main routines
         var dsn_sample = "<!-- tmpl_var name=dsn_sample -->";
@@ -12,27 +10,57 @@
 </head>
 <body>
 
-<h1>CompareRDBMS</h1>
-<h2>Configuration for <!-- tmpl_var name=driver_name --></h2>
-<p>It's recommended that you test your configuration before saving</p>
+<!-- TMPL_INCLUDE NAME="head_nav.html" -->
+
+<h2 class="page_title">Configuration for <!-- tmpl_var name=driver_name --></h2>
+<p class="page_text">It's recommended that you test your configuration before saving</p>
 <form method="post" id="config_form">
     <input type="hidden" name="rm" value="dbms_save"/>
     <input type="hidden" name="driver" value="<!-- tmpl_var name=driver_name -->"/>
-    <label for="label">Label</label>: <input name="label" id="label" type="text" value="<!-- tmpl_var name=label -->"/><br/>
-    <label for="profile">Profile</label>:
-    <select name="profile" id="profile">
-        <option value="">None</option>
-        <!-- tmpl_loop name=profile_list -->
-        <option value="<!-- tmpl_var name=uid -->" <!-- tmpl_var name=selected -->><!-- tmpl_var name=label --></option>
-        <!-- /tmpl_loop -->
-    </select><br/>
-    <label for="db">Database</label>: <input name="db" id="db" type="text" value="<!-- tmpl_var name=db -->"/><br/>
-    <label for="host">Host</label>: <input name="host" id="host" type="text" value="<!-- tmpl_var name=host -->"/><br/>
-    <label for="user">Username</label>: <input name="user" id="user" type="text" value="<!-- tmpl_var name=user -->"/><br/>
-    <label for="pass">Password</label>: <input name="pass" id="pass" type="text" value="<!-- tmpl_var name=pass -->"/><br/>
-    <label for="dsn">DSN</label>: <input name="dsn" id="dsn" type="text" value="<!-- tmpl_var name=dsn -->"/> <a href="#dsn" id="dsn_btn">generate</a><br/>
-    <a href="#test" id="test_btn">Test these settings</a> : <div id="test_results">not tested</div><br/>
-    <input type="submit" value="Save"/>
+    <table>
+        <tr>
+            <th><label for="label">Label</label></th>
+            <td><input name="label" id="label" type="text" value="<!-- tmpl_var name=label -->"/></td>
+        </tr>
+        <tr>
+            <th><label for="profile">Profile</label></th>
+            <td>
+                <select name="profile" id="profile">
+                    <option value="">None</option>
+                    <!-- tmpl_loop name=profile_list -->
+                    <option value="<!-- tmpl_var name=uid -->" <!-- tmpl_var name=selected -->><!-- tmpl_var name=label --></option>
+                    <!-- /tmpl_loop -->
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="db">Database</label></th>
+            <td><input name="db" id="db" type="text" value="<!-- tmpl_var name=db -->"/></td>
+        </tr>
+        <tr>
+            <th><label for="host">Host</label></th>
+            <td><input name="host" id="host" type="text" value="<!-- tmpl_var name=host -->"/></td>
+        </tr>
+        <tr>
+            <th><label for="username">Username</label></th>
+            <td><input name="username" id="user" type="text" value="<!-- tmpl_var name=username -->"/></td>
+        </tr>
+        <tr>
+            <th><label for="password">Password</label></th>
+            <td><input name="password" id="pass" type="text" value="<!-- tmpl_var name=password -->"/></td>
+        </tr>
+        <tr>
+            <th><label for="dsn">DSN</label></th>
+            <td><input name="dsn" id="dsn" type="text" value="<!-- tmpl_var name=dsn -->"/> <a href="#dsn" id="dsn_btn">generate</a></td>
+        </tr>
+            <th>Test these settings</th>
+            <td><a href="#test" id="test_btn">Test</a> <div id="test_results">not tested</div></tr>
+        </tr>
+        <tr>
+            <th><label for="save">Save</label></th>
+            <td><input type="submit" id="save" value="Save"/></td>
+        </tr>
+    </table>
 </form>
 
 </body>

@@ -1,54 +1,87 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>CompareRDBMS - Home</title>
-    <link rel="stylesheet" type="text/css" href="static/css/default.css">
-    <script src="/static/js/jquery-1.9.0.js"></script>
-    <script src="/static/js/json2.js"></script>
-    <script src="/static/js/main.js"></script>
+    <!-- TMPL_INCLUDE NAME="head.html" -->
 </head>
 <body>
 
-<h1>CompareRDBMS</h1>
+<!-- TMPL_INCLUDE NAME="head_nav.html" -->
 
-<h2>Available DB drivers</h2>
-<p>(Note: the existence of a driver does not indicate the existence of a DBMS)</p>
-<ul>
-    <!-- tmpl_loop name=driver_list -->
-    <li>
-        <a href="compare.cgi?rm=dbms_config&driver=<!-- tmpl_var name=driver_name -->"><!-- tmpl_var name=driver_name --></a> <!-- tmpl_if name=has_config -->(configured)<!-- /tmpl_if -->
-    </li>
-    <!-- /tmpl_loop -->
-</ul>
-<p>Select a driver above to configure a database connection</p>
-
-<h2>Available DB profiles</h2>
-<p>(Note: the existence of a profile does not indicate the existence of a DBMS)</p>
-<ul>
-    <!-- tmpl_loop name=profile_list -->
-    <li>
-        <a href="compare.cgi?rm=profile_config&profile=<!-- tmpl_var name=uid -->"><!-- tmpl_var name=label --></a>
-    </li>
-    <!-- /tmpl_loop -->
-</ul>
-<!-- tmpl_if name=profiles_exist -->
-<p>Select a profile above to edit it's configuration</p>
-<!-- tmpl_else -->
-<p>No profiles exist</p>
-<!-- /tmpl_if -->
-<p><a href="compare.cgi?rm=profile_config">Create new profile</a></p>
-
-<h2>Comparisons</h2>
-<h3>Driver Defined</h3>
-<p><a href="compare.cgi?rm=compare_driver_types">Types</a></p>
-<p><a href="compare.cgi?rm=compare_driver_type_details">Type Details</a></p>
-<h3>Profile Defined</h3>
-<p><a href="compare.cgi?rm=compare_profile_types">Types</a></p>
-<p><a href="compare.cgi?rm=compare_profile_type_details">Type Details</a></p>
-<h3>Drivers with Associated Profiles</h3>
-<p><a href="compare.cgi?rm=compare_driver_types&profile=1">Types</a></p>
-
-<h2>Information</h2>
-<p><a href="compare.cgi?rm=driver_type_list">Driver Recognised Types</a></p>
+<div class="block_half">
+    <div class="block ui-widget-content ui-corner-all ui-helper-clearfix">
+        <h2 class="block_heading ui-widget-header ui-corner-all">Comparisons</h2>
+        <div class="block_content ui-helper-clearfix">
+            <div class="block block_inner ui-widget-content ui-corner-all ui-helper-clearfix">
+                <h3 class="block_heading ui-widget-header ui-corner-all">Driver Defined</h3>
+                <div class="block_content">
+                    <p><a href="compare.cgi?rm=compare_driver_types">Types</a></p>
+                    <p><a href="compare.cgi?rm=compare_driver_type_details">Type Details</a></p>
+                </div>
+            </div>
+            <div class="block block_inner ui-widget-content ui-corner-all ui-helper-clearfix">
+                <h3 class="block_heading ui-widget-header ui-corner-all">Profile Defined</h3>
+                <div class="block_content">
+                    <p><a href="compare.cgi?rm=compare_profile_types">Types</a></p>
+                    <p><a href="compare.cgi?rm=compare_profile_type_details">Type Details</a></p>
+                </div>
+            </div>
+            <div class="block block_inner ui-widget-content ui-corner-all ui-helper-clearfix">
+                <h3 class="block_heading ui-widget-header ui-corner-all">Drivers with Associated Profiles</h3>
+                <div class="block_content">
+                    <p><a href="compare.cgi?rm=compare_driver_types&profile=1">Types</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="block_half">
+    <div class="block ui-widget-content ui-corner-all ui-helper-clearfix">
+        <h2 class="block_heading ui-widget-header ui-corner-all">Information</h2>
+        <div class="block_content ui-helper-clearfix">
+            <p><a href="compare.cgi?rm=driver_type_list">Driver Recognised Types</a></p>
+        </div>
+    </div>
+</div>
+<div style="clear:both"></div>
+<div class="block_half">
+    <div class="block ui-widget-content ui-corner-all ui-helper-clearfix">
+        <h2 class="block_heading ui-widget-header ui-corner-all">Available DB drivers</h2>
+        <div class="block_content ui-helper-clearfix">
+            <p>(Note: the existence of a driver does not indicate the existence of a DBMS)</p>
+            <ul>
+                <!-- tmpl_loop name=driver_list -->
+                <li>
+                    <a href="compare.cgi?rm=dbms_config&driver=<!-- tmpl_var name=driver_name -->"><!-- tmpl_var name=driver_name --></a> <!-- tmpl_if name=has_config -->(configured)<!-- /tmpl_if -->
+                </li>
+                <!-- /tmpl_loop -->
+            </ul>
+            <p>Select a driver above to configure a database connection</p>
+        </div>
+    </div>
+</div>
+<div class="block_half">
+    <div class="block ui-widget-content ui-corner-all ui-helper-clearfix">
+        <h2 class="block_heading ui-widget-header ui-corner-all">Available DB profiles</h2>
+        <div class="block_content ui-helper-clearfix">
+            <p>(Note: the existence of a profile does not indicate the existence of a DBMS)</p>
+            <ul>
+                <!-- tmpl_loop name=profile_list -->
+                <li>
+                    <a href="compare.cgi?rm=profile_config&profile=<!-- tmpl_var name=uid -->"><!-- tmpl_var name=label --></a>
+                </li>
+                <!-- /tmpl_loop -->
+            </ul>
+            <!-- tmpl_if name=profiles_exist -->
+            <p>Select a profile above to edit it's configuration</p>
+            <!-- tmpl_else -->
+            <p>No profiles exist</p>
+            <!-- /tmpl_if -->
+            <p><a href="compare.cgi?rm=profile_config">Create new profile</a></p>
+        </div>
+    </div>
+</div>
+<div style="clear:both"></div>
 
 </body>
 </html>

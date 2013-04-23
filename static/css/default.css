@@ -4,11 +4,57 @@
 
 
 body {
+    margin: 5px;
+    padding 0px;
     font-family: verdana,helvetica,arial,sans-serif;
+}
+
+h1, h2, h3, h4, h5 {
+    font-style: normal;
+    font-weight: 400;
+    color: #088A08;
+    margin: 0px;
+}
+
+.page_heading {
+    float: left;
+}
+
+.page_title {
+    font-style: normal;
+    font-weight: 400;
+    color: #088A08;
+    margin: 10px;
+}
+
+.page_text {
+    margin: 10px;
+}
+
+.navigation {
+    float: left;
+    margin: 10px 0px 0px 30px;
+    list-style: none;
+}
+
+.navigation a {
+    text-decoration: none;
+}
+
+.navigation a:hover {
+    text-decoration: underline overline;
+}
+
+.navigation li
+{
+    display: inline;
+    list-style-type: none;
+    padding-right: 20px;
 }
 
 table {
     border-collapse: collapse;
+    margin: 0px 10px;
 }
 
 table td, table th {
@@ -62,6 +108,57 @@ table tr.row_b td {
 
 .type th {
     padding-left: 30px;
+}
+
+.block_header {
+    overflow: hidden;
+    padding: 10px;
+    margin: 1px;
+}
+
+/*
+ * Styles for the Home page
+ */
+
+.block_half {
+    float: left;
+    width: 50%;
+}
+
+.block {
+    margin: 1px;
+}
+
+.block_inner {
+    float: left;
+}
+
+.block_heading {
+    padding: 5px;
+    margin: -1px;
+}
+
+.block h2 {
+    font-weight: 400;
+    color: #088A08;
+}
+
+.block h3 {
+    font-weight: 400;
+    color: #088A08;
+}
+
+.block_content {
+    padding: 5px;
+}
+
+
+/*
+ * Styles for the type details
+ */
+
+.type_details_heading h2, h3, h4, h5 {
+    margin: 10px;
 }
 
 

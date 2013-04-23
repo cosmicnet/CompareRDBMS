@@ -1,22 +1,22 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>CompareRDBMS - Compare Driver Type Details</title>
-    <link rel="stylesheet" type="text/css" href="static/css/default.css">
-    <script src="/static/js/jquery-1.9.0.js"></script>
-    <script src="/static/js/json2.js"></script>
-    <script src="/static/js/main.js"></script>
+    <!-- TMPL_INCLUDE NAME="head.html" -->
 </head>
 <body id="profile_details">
 
-<h1>CompareRDBMS</h1>
-<h2>Profile Type Details</h2>
+<!-- TMPL_INCLUDE NAME="head_nav.html" -->
 
-<!-- tmpl_loop name=collective_row -->
-<h2><!-- tmpl_var name=collective_label --></h2>
-    <!-- tmpl_loop name=subtype_row -->
-<h3><!-- tmpl_var name=subtype_label --></h3>
+<div class="type_details_heading">
+    <h2>Profile Type Details</h2>
+    <!-- tmpl_loop name=collective_row -->
+    <h2><!-- tmpl_var name=collective_label --></h2>
+        <!-- tmpl_loop name=subtype_row -->
+    <h3><!-- tmpl_var name=subtype_label --></h3>
         <!-- tmpl_loop name=type_row -->
-<h4><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</h4>
+    <h4><!-- tmpl_var name=type_name --> (<!-- tmpl_var name=type_code -->)</h4>
+</div>
 <table id="tbl_<!-- tmpl_var name=type_name -->" data-type="<!-- tmpl_var name=type_code -->">
     <thead>
         <tr class="heading">
@@ -66,8 +66,6 @@
         <!-- /tmpl_loop -->
     <!-- /tmpl_loop -->
 <!-- /tmpl_loop -->
-
-<p>Please return to the <a href="compare.cgi">Home Page</a></p>
 
 </body>
 </html>

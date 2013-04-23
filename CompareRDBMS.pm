@@ -29,9 +29,11 @@ sub setup {
     my $self = shift;
     $self->tmpl_path('templates');
     $self->start_mode('home');
+    $self->error_mode('error');
     $self->mode_param('rm');
     $self->run_modes(
         home                 => 'home',
+        error                => 'error',
         dbms_config          => 'dbms_config',
         dbms_test            => 'dbms_test',
         dbms_save            => 'dbms_save',
@@ -45,8 +47,6 @@ sub setup {
         compare_driver_type_details  => 'compare_driver_type_details',
         compare_profile_types        => 'compare_profile_types',
         compare_profile_type_details => 'compare_profile_type_details',
-        compare_mixed_types          => 'compare_mixed_types',
-        compare_mixed_type_details   => 'compare_mixed_type_details',
     );
 }
 
@@ -99,6 +99,24 @@ sub home {
 }
 
 
+=head2 error
+
+This is the generic error page that is displayed when an unexpected error occurs.
+
+=cut
+
+sub error {
+    my $self = shift;
+    # Load page template
+    my $tmpl = $self->load_tmpl('error.html', 'die_on_bad_params', 0);
+    # Populate template
+    $tmpl->param(
+        error_message => $_[0],
+    );
+    return $tmpl->output();
+}
+
+
 =head2 dbms_config
 
 This is the page is where config can be set for the chosen database driver.
@@ -126,7 +144,8 @@ sub dbms_config {
         push( @profile_list, {
             uid   => $profile->{uid},
             label => $profile->{label},
-            selected => $dbconfig->{profile} && $dbconfig->{profile} eq $profile->{uid} ? 'selected="selected"' : '',
+            selected => $dbconfig->{profile} && $dbconfig->{profile} eq $profile->{uid}
+                ? 'selected="selected"' : '',
         });
     }
     # DSN templates
@@ -146,12 +165,7 @@ sub dbms_config {
         dsn_sample   => $dsn,
         driver_name  => $driver,
         profile_list => \@profile_list,
-        label => $dbconfig->{label},
-        db    => $dbconfig->{db},
-        host  => $dbconfig->{host},
-        user  => $dbconfig->{username},
-        pass  => $dbconfig->{password},
-        dsn   => $dbconfig->{dsn},
+        %$dbconfig,
     );
     return $tmpl->output();
 }
@@ -176,13 +190,14 @@ sub dbms_test {
         success => 1,
     );
     # Test the DB config
-    if ( my $dbh = DBI->connect($dsn, $q->param('user'), $q->param('pass'),
-        { RaiseError => 0, PrintError => 0, PrintWarn => 0, AutoCommit => 1 }) ) {
+    my $dbh;
+    if ( eval { $dbh = DBI->connect($dsn, $q->param('username'), $q->param('password'),
+        { RaiseError => 0, PrintError => 0, PrintWarn => 0, AutoCommit => 1 } ) } ) {
         $dbh->disconnect;
     }
     else {
         $return{success} = 0;
-        $return{error} = $DBI::errstr;
+        $return{error} = $DBI::errstr || $@;
     }
     $self->header_add( -type => 'text/json' );
     return to_json( \%return );
@@ -207,30 +222,26 @@ sub dbms_save {
     $xml->set( indent => 4 );
     $xml->set( force_array => [ qw( connection ) ] );
     my $db_list = $xml->parsefile( 'db_config.xml' );
-    my $seen = 0;
     my $db_update;
     foreach my $connection ( @{ $db_list->{rdbms}->{connection} } ) {
         if ( $connection->{driver} eq $q->param('driver') ) {
             $db_update = $connection;
         }#if
     }#foreach
-    unless ( $seen ) {
+    unless ( ref $db_update ) {
         tie my %connection, 'Tie::IxHash';
         $db_update = \%connection;
         push( @{ $db_list->{rdbms}->{connection} }, $db_update );
     }
-    $db_update->{label}    = $q->param('label');
-    $db_update->{driver}   = $q->param('driver');
-    $db_update->{profile}  = $q->param('profile');
-    $db_update->{db}       = $q->param('db');
-    $db_update->{host}     = $q->param('host');
-    $db_update->{dsn}      = $q->param('dsn');
-    $db_update->{username} = $q->param('user');
-    $db_update->{password} = $q->param('pass');
 
-    open( OUTF, '>db_config.xml' );
-        print OUTF $xml->write( $db_list );
-    close( OUTF );
+    # Load input to database hash
+    $db_update->{$_} = $q->param($_)
+        for qw(label driver profile db host dsn username password );
+
+    # Save to file
+    open( my $OUTF, '>', 'db_config.xml' ) || die( "Cannot write to db_config.xml" );
+        print $OUTF $xml->write( $db_list );
+    close( $OUTF );
     # Populate the template
     $tmpl->param(
         driver_name => $q->param('driver'),
@@ -306,13 +317,9 @@ sub profile_save {
     my @driver_list = $q->param('driver');
     $profile->{drivers}->{driver} = \@driver_list;
     # Write out to file
-    my $xml = XML::TreePP->new();
-    $xml->set( use_ixhash => 1 );
-    $xml->set( indent => 4 );
-    open( OUTF, ">profiles/$profile->{uid}.xml" );
-        print OUTF $xml->write( { profile => $profile } );
-    close( OUTF );
-
+    if ( my $return = _profile_save( $profile ) ) {
+        die( $return );
+    }
     # If the profile is changing uid, delete the old profile
     if ( $old_uid && $old_uid ne $profile->{uid} ) {
         unlink( "profiles/$old_uid.xml" );
@@ -373,19 +380,29 @@ sub compare_driver_types {
     my @db_row;
     my %db_types;
     my %profile_hash;
-    foreach my $db ( @db_list ) {
-        my $profile = $dbconfig->{$db}->{profile};
+    foreach my $db_id ( @db_list ) {
+        my $db = $dbconfig->{$db_id};
+        my $profile = $db->{profile};
         push( @db_row, {
-            db      => $db,
-            label   => $dbconfig->{$db}->{label},
+            db      => $db_id,
+            label   => $db->{label},
             profile => $profile,
             colspan => $profile && $q->param('profile') ? 2 : 1,
         });
-        my $dbh = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{username}, $dbconfig->{$db}->{password} );
+        # Connect to database
+        my $dbh;
+        eval { $dbh = DBI->connect( $db->{dsn}, $db->{username}, $db->{password},
+            { RaiseError => 1, PrintError => 0, PrintWarn => 0, AutoCommit => 1 } ) };
+        # Check connection is valid
+        die( "Database connection for '$db->{label}' is invalid. Error: $@" ) if $@;
         # Compile all types
         my $type_info = $dbh->type_info_all();
-        foreach my $type ( @$type_info[1..$#$type_info] ) {
-            push( @{ $db_types{ $type->[1] }->{$db} }, $type->[0] );
+        # Remove index hash detail => number
+        shift @$type_info;
+        # Define known types
+        foreach my $type ( @$type_info ) {
+            my ( $type_name, $type_code ) = @$type;
+            push( @{ $db_types{ $type_code }->{$db_id} }, $type_name );
         }
         $dbh->disconnect;
         # Are we including profiles
@@ -430,7 +447,7 @@ sub compare_driver_types {
                     my ( $profile_uid, $profile_type_name ) = ( '', '' );
                     if ( $q->param('profile') && $profile ) {
                         $profile_uid = $profile;
-                        $profile_type_name = $profile_hash{$profile}->{types}->{$type_name}->{standard}->{TYPE_NAME};
+                        $profile_type_name = $profile_hash{$profile}->{type}->{$type_name}->{standard}->{TYPE_NAME};
                     }
                     push( @support_row, {
                         db_type_list      => \@db_type_list,
@@ -539,25 +556,32 @@ sub compare_driver_type_details {
                 my %db_info;
                 my $match_count = 0;
                 # Loop through the driver database connections
-                foreach my $db ( @db_list ) {
-                    unless ( $dbh_map{$db} ) {
-                        # Create the DB DSN
-                        $dbh_map{$db} = DBI->connect( $dbconfig->{$db}->{dsn}, $dbconfig->{$db}->{username}, $dbconfig->{$db}->{password} );
+                foreach my $db_id ( @db_list ) {
+                    my $db = $dbconfig->{$db_id};
+                    unless ( $dbh_map{$db_id} ) {
+                        # Connect to database
+                        my $dbh;
+                        eval { $dbh = DBI->connect( $db->{dsn}, $db->{username}, $db->{password},
+                            { RaiseError => 1, PrintError => 0, PrintWarn => 0, AutoCommit => 1 } ) };
+                        # Check connection is valid
+                        die( "Database connection for '$db->{label}' is invalid. Error: $@" ) if $@;
+                        # Cache connection for use later
+                        $dbh_map{$db_id} = $dbh;
                     }#unless
                     # Get the matching types
-                    my @type_info = $dbh_map{$db}->type_info( $type );
+                    my @type_info = $dbh_map{$db_id}->type_info( $type );
                     if ( $q->param('type_name') ) {
-                        $db_info{$db} = [ grep { $_->{TYPE_NAME} eq $q->param('type_name') } @type_info ];
+                        $db_info{$db_id} = [ grep { $_->{TYPE_NAME} eq $q->param('type_name') } @type_info ];
                     }
                     else {
-                        $db_info{$db} = \@type_info;
+                        $db_info{$db_id} = \@type_info;
                     }
                     my $count = @type_info;
                     $match_count += $count;
                     $count ||= 1;
                     push( @db_row, {
-                        db      => $db,
-                        label   => $dbconfig->{$db}->{label},
+                        db      => $db_id,
+                        label   => $db->{label},
                         colspan => $count,
                     });
                 }#foreach
@@ -572,6 +596,7 @@ sub compare_driver_type_details {
                     next;
                 }
 
+                # Generate standard type details list
                 my @detail_row;
                 my $count = 0;
                 foreach my $detail ( sort { $standard_map->{$a} <=> $standard_map->{$b} } keys %$standard_map ) {
@@ -689,7 +714,7 @@ sub compare_profile_types {
                         collective_id => $collective_id,
                         subtype_id    => $subtype_id,
                         type_code     => $type,
-                        type_name     => $profile->{types}->{$type_name}->{standard}->{TYPE_NAME},
+                        type_name     => $profile->{type}->{$type_name}->{standard}->{TYPE_NAME},
                         profile       => $profile->{uid},
                     });
                 }#foreach
@@ -780,7 +805,7 @@ sub compare_profile_type_details {
                 # Loop through the driver database connections
                 foreach my $profile ( @$profile_list ) {
                     # Get the matching type
-                    my $exist = $profile->{types}->{$type_name} ? 1 : 0;
+                    my $exist = $profile->{type}->{$type_name} ? 1 : 0;
                     $match_count += $exist;
                     push( @profile_row, {
                         profile => $profile->{uid},
@@ -803,8 +828,8 @@ sub compare_profile_type_details {
                     my @detail_list;
                     foreach my $profile ( @$profile_list ) {
                         my $value = '';
-                        if ( $profile->{types}->{$type_name} ) {
-                            $value = $profile->{types}->{$type_name}->{standard}->{$detail};
+                        if ( $profile->{type}->{$type_name} ) {
+                            $value = $profile->{type}->{$type_name}->{standard}->{$detail};
                         }
                         push( @detail_list, {
                             value => $value,
@@ -829,8 +854,8 @@ sub compare_profile_type_details {
                     my @detail_list;
                     foreach my $profile ( @$profile_list ) {
                         my $value = '';
-                        if ( $profile->{types}->{$type_name} ) {
-                            $value = $profile->{types}->{$type_name}->{extended}->{$detail};
+                        if ( $profile->{type}->{$type_name} ) {
+                            $value = $profile->{type}->{$type_name}->{extended}->{$detail};
                         }
                         push( @detail_list, {
                             value => $value,
@@ -903,11 +928,11 @@ sub profile_detail_save {
     # Load, update, and save config
     my $profile = _get_profile( uid => $profile_uid );
     # Get the type code -> name
-    my $type_name = _get_type_names()->{$type};
+    my $type_name_hash = _get_type_names();
 
     # Are we deleting or updating?
     if ( $q->param('delete') ) {
-        delete $profile->{types}->{$type_name};
+        delete $profile->{type}->{ $type_name_hash->{$type} };
     }
     else {
         # Decode the JSON
@@ -924,31 +949,25 @@ sub profile_detail_save {
             $profile_extended{$detail} = defined $profile_type_hash->{extended}->{$detail} ?
                 $profile_type_hash->{extended}->{$detail} : '';
         }
-        # Add code attribute
-        $profile->{types}->{$type_name} = {
+        # Add code and name attributes
+        $profile->{type}->{ $type_name_hash->{$type} } = {
             -code => $type,
+            -name => $type_name_hash->{$type},
             standard => \%profile_standard,
             extended => \%profile_extended,
         };
-    }
+    }#else
 
     my %return = (
         success => 1,
     );
     # Write out to file
-    open( OUTF, ">profiles/$profile->{uid}.xml" ) || do {
+    if ( my $result = _profile_save( $profile ) ) {
         %return = (
             success => 0,
-            error   => "Cannot write to file profiles/$profile->{uid}.xml",
+            error   => $result,
         );
     };
-    if ( $return{success} ) {
-        my $xml = XML::TreePP->new();
-        $xml->set( use_ixhash => 1 );
-        $xml->set( indent => 4 );
-        print OUTF $xml->write( { profile => $profile } );
-        close( OUTF );
-    }
 
     return to_json(\%return);
 }
@@ -984,7 +1003,7 @@ sub profile_type_check {
         $return{error} = 'Error opening profile';
     }
     else {
-        $return{exists} = 1 if ref $profile->{types}->{$type_name};
+        $return{exists} = 1 if ref $profile->{type}->{$type_name};
     }
 
     return to_json(\%return);
@@ -1014,8 +1033,12 @@ sub profile_type_copy {
     ## Get DB driver type details
     # Get configured database
     my $dbconfig = _get_dbconfig( $db );
-    # Create the DB DSN
-    my $dbh = DBI->connect( $dbconfig->{dsn}, $dbconfig->{username}, $dbconfig->{password} );
+    # Connect to database
+    my $dbh;
+    eval { $dbh = DBI->connect( $dbconfig->{dsn}, $dbconfig->{username}, $dbconfig->{password},
+        { RaiseError => 1, PrintError => 0, PrintWarn => 0, AutoCommit => 1 } ) };
+    # Check connection is valid
+    die( "Database connection for '$dbconfig->{label}' is invalid. Error: $@" ) if $@;
     # Get the matching types
     my @type_info = $dbh->type_info( $db_type );
     my ( $db_type_details ) = grep { $_->{TYPE_NAME} eq $db_type_name } @type_info;
@@ -1038,22 +1061,18 @@ sub profile_type_copy {
         $return{error} = 'Error opening profile';
     }
     else {
-        $profile->{types}->{$profile_type_name} = {
+        $profile->{type}->{$profile_type_name} = {
             -code => $profile_type,
+            -name => $profile_type_name,
             standard => \%profile_type_details,
         };
         # Write out to file
-        open( OUTF, ">profiles/$dbconfig->{profile}.xml" ) || do {
-            $return{success} = 0;
-            $return{error} = "Cannot write to file profiles/$dbconfig->{profile}.xml";
+        if ( my $result = _profile_save( $profile ) ) {
+            %return = (
+                success => 0,
+                error   => $result,
+            );
         };
-        if ( $return{success} ) {
-            my $xml = XML::TreePP->new();
-            $xml->set( use_ixhash => 1 );
-            $xml->set( indent => 4 );
-            print OUTF $xml->write( { profile => $profile } );
-            close( OUTF );
-        }
     }
 
     return to_json(\%return);
@@ -1085,7 +1104,7 @@ sub _get_dbconfig {
         else {
             $DBCONFIG->{ $connection->{driver} } = $connection;
         }
-    }#while
+    }#foreach
     return $DBCONFIG;
 }
 
@@ -1103,31 +1122,76 @@ sub _get_profile {
     my $profile;
     my $xml = XML::TreePP->new();
     $xml->set( use_ixhash => 1 );
-    $xml->set( force_array => [ qw( driver token item ) ] );
+    $xml->set( force_array => [ qw( driver symbol type map map_value ) ] );
     # Do we want just a single profile?
     if ( $param{uid} ) {
         $profile = $xml->parsefile( "profiles/$param{uid}.xml" )->{profile};
+        # Translate type list into a hash
+        my %type_hash = map { $_->{-name} => $_ } @{ $profile->{type_list}->{type} };
+        $profile->{type} = \%type_hash;
     }
     else {
         $profile = [];
-        opendir( DIR, 'profiles' ) || die( 'Cannot open profiles directory' );
-            while ( readdir( DIR ) ) {
+        opendir( my $DIR, 'profiles' ) || die( 'Cannot open profiles directory' );
+            while ( readdir( $DIR ) ) {
                 # Skip hidden files and folders
                 next if $_ =~ /^\./;
                 # Skip if it isn't a config file
                 next unless $_ =~ /\.xml$/;
                 # Add profile settings to list
                 my $profile_hash = $xml->parsefile( "profiles/$_" )->{profile};
+                # Translate type list into a hash
+                my %type_hash = map { $_->{-name} => $_ } @{ $profile_hash->{type_list}->{type} };
+                $profile_hash->{type} = \%type_hash;
                 # See if we are only returning profiles for a certain driver
                 if ( $param{driver} ) {
                     next unless _any( $profile_hash->{drivers}->{driver}, $param{driver} );
                 }
                 push( @$profile, $profile_hash );
             }#while
-        closedir( DIR );
+        closedir( $DIR );
         $profile = [ sort { $a->{label} cmp $b->{label} } @$profile ];
     }#else
     return $profile;
+}
+
+
+=head2 _profile_save
+
+Saves the profile, returns 0 on success or an error message on failure.
+
+=cut
+
+sub _profile_save {
+    my ( $profile ) = @_;
+    # Get the type code -> name
+    my $type_name_hash = _get_type_names();
+
+    # Keep types in the correct order
+    my @type_list;
+    my $collective = _get_type_collective();
+    # Start with collective type names
+    while ( my ( $collective_id, $collective_info ) = each %$collective ) {
+        # Then sub types
+        while ( my ( $subtype_id, $subtype_info ) = each %{ $collective_info->{sub_type} } ) {
+            # The types
+            foreach my $type ( @{ $subtype_info->{type} } ) {
+                my $type_name = $type_name_hash->{$type};
+                push( @type_list, $profile->{type}->{$type_name} ) if $profile->{type}->{$type_name};
+            }
+        }#while
+    }#while
+    $profile->{type_list}->{type} = \@type_list;
+    delete $profile->{type};
+
+    # Write out to file
+    open( my $OUTF, '>', "profiles/$profile->{uid}.xml" ) || return "Cannot write to file profiles/$profile->{uid}.xml";
+    my $xml = XML::TreePP->new();
+    $xml->set( use_ixhash => 1 );
+    $xml->set( indent => 4 );
+    print $OUTF $xml->write( { profile => $profile } );
+    close( $OUTF );
+    return 0;
 }
 
 
