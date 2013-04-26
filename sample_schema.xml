@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<schema>
+<schema version="0.1">
     <table_list>
         <table name="tbl_foreign">
             <comment>Numeric column table</comment>
@@ -44,7 +44,7 @@
                     <column>col_int</column>
                 </primary>
 				<unique name="uni_col">
-					<column name="col_num"/>
+					<column>col_num</column>
 				</unique>
                 <foreign name="for_key">
                     <column>col_big</column>

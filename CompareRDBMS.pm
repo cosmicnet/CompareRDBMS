@@ -4,12 +4,12 @@ package CompareRDBMS;
 
 =head1 NAME
 
-CompareRDBMS - A tool for comparing various RDBMSs
+CompareRDBMS - A tool for comparing various RDBMSs.
 
 =head1 SYNOPSIS
 
     # Start the tool as local web service on port 8080
-    perl compareRDBMS.pl 8080
+    perl compare.cgi 8080
     # Then open in your browser as http://localhost:8080/
 
 =cut
@@ -102,6 +102,7 @@ sub home {
 =head2 error
 
 This is the generic error page that is displayed when an unexpected error occurs.
+If captured, the exceptional error message is displayed in the page.
 
 =cut
 
@@ -119,7 +120,7 @@ sub error {
 
 =head2 dbms_config
 
-This is the page is where config can be set for the chosen database driver.
+This is the page is where configuration can be set for the chosen database driver.
 It includes an AJAX link to the test method, allowing the user to test the
 DB settings before they save.
 
@@ -206,7 +207,7 @@ sub dbms_test {
 
 =head2 dbms_save
 
-Saves the DB configuration and displays success page.
+Saves the DB configuration and displays success page. Configuration is saved to db_config.xml.
 
 =cut
 
@@ -252,7 +253,7 @@ sub dbms_save {
 
 =head2 profile_config
 
-This is the page is where a profile can be configured.
+This is the page where a profile can be created and have its basic setting configured.
 
 =cut
 
@@ -292,7 +293,7 @@ sub profile_config {
 
 =head2 profile_save
 
-Saves the profile configuration and displays success page.
+Saves the profile configuration and displays success page. Configuration is saved to profiles/PROFILE_ID.xml.
 
 =cut
 
@@ -335,7 +336,7 @@ sub profile_save {
 
 =head2 driver_type_list
 
-Displays a list of all the recognised types.
+Displays a list of all the DBI recognised types.
 
 =cut
 
@@ -364,7 +365,8 @@ sub driver_type_list {
 =head2 compare_driver_types
 
 Displays a table for all the types supported by the configured databases.
-The databases local name for the type is given.
+The databases local name for the type is given. This routine is also used to
+display a mixed table of database driver types and profile types.
 
 =cut
 
@@ -975,7 +977,7 @@ sub profile_detail_save {
 
 =head2 profile_type_check
 
-Checks if a particular profile type exists.
+Checks if a particular profile type exists. Returns JSON.
 
 =cut
 
@@ -1083,7 +1085,7 @@ sub profile_type_copy {
 
 =head2 _get_db_config
 
-Returns a hash for the database configuration.
+Returns a hash for the database configuration from db_config.xml.
 
 =cut
 
@@ -1158,7 +1160,7 @@ sub _get_profile {
 
 =head2 _profile_save
 
-Saves the profile, returns 0 on success or an error message on failure.
+Saves the profile to profiles/PROFILE_ID.xml, returns 0 on success or an error message on failure.
 
 =cut
 

@@ -4,7 +4,7 @@ package Schema;
 
 =head1 NAME
 
-Schema - Uses RDBMS profiles to turn generic DB schema definitions into RDBMS specific DDL
+Schema - Uses RDBMS profiles to turn generic DB schema definitions into RDBMS specific DDL.
 
 =head1 SYNOPSIS
 
@@ -70,7 +70,8 @@ sub new {
     $schema->dbh( $dbh );
     my $dbh = $schema->dbh();
 
-Get/Set the database handle used for quoting
+Get/Set the database handle used for quoting literals and identifiers based
+on the driver's knowledge of the database.
 
 =cut
 
@@ -175,7 +176,7 @@ sub schema {
 
     my $column_list = $schema->get_column_list( $table );
 
-Returns a list of columns from the loaded schema for the passed table.
+Returns a list of columns from the loaded schema for the table passed as a parameter.
 
 =cut
 
@@ -195,11 +196,11 @@ sub get_column_list {
 
     my $ddl = $schema->create();
 
-Turn the loaded DB schema into DDL statements for the profiles database
+Turn the loaded DB schema into DDL statements for the profiles database.
 
 Optional arguments:
 
-    output => grouped || separate # Pass statements back grouped together by table, or as an array
+    output => 'grouped' || 'separate' # Pass statements back grouped together by table, or separated by component (tables, indexes, etc.)
     drop => 1 || 0 # Prepend drop table statements
 
 =cut
@@ -298,7 +299,7 @@ sub create {
 
     my $literal = $schema->quote( 'literal string', 'CHAR' );
 
-Based on DBI's quote method, but utilises the profiles type details
+Based on DBI's quote method, but utilises the profiles type details for quoting literals.
 
 =cut
 

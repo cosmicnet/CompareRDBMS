@@ -1,6 +1,28 @@
 # -*- perl -*-
 
-# t/020_schema.t - load and test sample schemas
+=pod
+
+=head1 NAME
+
+020_schema.t - Load and test sample schemas.
+
+=head1 SYNOPSIS
+
+    prove t/020_schema.t
+    # Or for more verbose output
+    prove -v t/020_schema.t
+
+=head1 DESCRIPTION
+
+Automatically tests the DDL generation capabilities of Schema.pm.
+At this time it tests numeric types for the CompareRDBMS configured database
+connections, using their associated profiles and the generic database XML
+schema in schemas/numeric.xml. Minimum and maximum values are tested for
+each numeric type, using the profiles extended type details for that type.
+Statistics are produced at the end of the tests showing what the high and
+low values are for each type across all the database connections.
+
+=cut
 
 use strict;
 use warnings;

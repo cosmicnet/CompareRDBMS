@@ -4,12 +4,12 @@
 
 =head1 NAME
 
-schema.pl - Command line script to turn XML database schemas into RDBMS specific DDL statements
+schema.pl - Command line script to turn XML database schemas into RDBMS specific DDL statements.
 
 =head1 SYNOPSIS
 
     perl schema.pl DATABASE.xml RDBMS_profile
-    # Where DATABASE.xml if the database schema definition in XML
+    # Where DATABASE.xml is the database schema definition in XML
     # and RDBMS is a CompareRDBMS configured database
 
     # Examples
@@ -17,6 +17,12 @@ schema.pl - Command line script to turn XML database schemas into RDBMS specific
     perl schema.pl sample_schema.xml PostgreSQL_9
     perl schema.pl sample_schema.xml Oracle_11g
     perl schema.pl sample_schema.xml SQLServer_2012
+
+=head1 DESCRIPTION
+
+schema.pl provides simple command line access to UnifyRDBMS's Schema.pm module.
+Therefore, allowing the generation of RDBMS specific DDL statements from a generic
+XML schema outside of application code.
 
 =cut
 
