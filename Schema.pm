@@ -89,7 +89,7 @@ sub dbh {
     my $profile = $schema->profile();
 
 Set the RDBMS profile used for DDL generation. Note that the dbh must be set first,
-a check is ran to ensure the profile is valid for the DB driver.
+a check is run to ensure the profile is valid for the DB driver.
 
 =cut
 
@@ -335,7 +335,7 @@ sub quote {
 
 =item _process_rule
 
-Takes a database schema element, and the corresponding profile syntax rule definition
+Takes a database schema element and the corresponding profile syntax rule definition
 and produces an SQL statement or list of statements.
 Rule types are either statement_list, statement, string_group or string.
 
