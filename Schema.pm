@@ -121,7 +121,7 @@ sub profile {
         $self->{CONFIG}->{PROFILE} = $profile;
     }
     else {
-        # Check schema is loaded
+        # Check profile is loaded
         croak( "No profile has been loaded" ) unless ref $self->{CONFIG}->{PROFILE};
     }
     return 1;
@@ -534,6 +534,7 @@ sub _process_string {
                 $value = $input;
             }
             print "Value: $value\n" if $DEBUG > 1;
+            # Process this rule if a value exists
             if ( $value ) {
                 my $rule = $self->_process_rule(
                     $self->{CONFIG}->{PROFILE}->{ddl}->{rule}->{$name},
@@ -541,6 +542,7 @@ sub _process_string {
                 );
                 push( @symbol_list, $rule );
             }
+            # Error if this wasn't conditional
             elsif ( ! $symbol->{-condition} ) {
                 croak( "In table '$self->{context}->{table}->{-name}' $rule->{-name} $symbol->{-type} $symbol->{-name} $key is required" );
             }
@@ -648,6 +650,7 @@ sub _process_rule_group {
                     if ( ref $item ) {
                         $value = $item->{-value} || $item->{-name};
                     }
+                    # Quote if needed
                     if ( $symbol->{-quote} ) {
                         if ( $symbol->{-quote} eq 'literal' ) {
                             $value = $self->{CONFIG}->{DBH}->quote($value);
@@ -656,6 +659,7 @@ sub _process_rule_group {
                             $value = $self->{CONFIG}->{DBH}->quote_identifier($value);
                         }
                     }#if
+                    # Add extra formatting
                     if ( $self->{CONFIG}->{FORMAT} ) {
                         my $indent = ' ' x $self->{context}->{indent};
                         $value = "$indent$value";

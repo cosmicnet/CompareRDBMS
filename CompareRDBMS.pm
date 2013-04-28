@@ -27,6 +27,7 @@ use warnings;
 
 sub setup {
     my $self = shift;
+    # Configure runmodes and settings
     $self->tmpl_path('templates');
     $self->start_mode('home');
     $self->error_mode('error');
@@ -224,6 +225,7 @@ sub dbms_save {
     $xml->set( force_array => [ qw( connection ) ] );
     my $db_list = $xml->parsefile( 'db_config.xml' );
     my $db_update;
+    # Loop each connection to make sure we are updating the right one
     foreach my $connection ( @{ $db_list->{rdbms}->{connection} } ) {
         if ( $connection->{driver} eq $q->param('driver') ) {
             $db_update = $connection;
@@ -382,9 +384,11 @@ sub compare_driver_types {
     my @db_row;
     my %db_types;
     my %profile_hash;
+    # Loop through the configured databases
     foreach my $db_id ( @db_list ) {
         my $db = $dbconfig->{$db_id};
         my $profile = $db->{profile};
+        # Add to the table row
         push( @db_row, {
             db      => $db_id,
             label   => $db->{label},
@@ -446,11 +450,13 @@ sub compare_driver_types {
                             profile       => scalar( $q->param('profile') ) && $profile,
                         });
                     }#foreach
+                    # Are we adding profile details as well
                     my ( $profile_uid, $profile_type_name ) = ( '', '' );
                     if ( $q->param('profile') && $profile ) {
                         $profile_uid = $profile;
                         $profile_type_name = $profile_hash{$profile}->{type}->{$type_name}->{standard}->{TYPE_NAME};
                     }
+                    # Add this to the support row
                     push( @support_row, {
                         db_type_list      => \@db_type_list,
                         collective_id     => $collective_id,
@@ -578,6 +584,7 @@ sub compare_driver_type_details {
                     else {
                         $db_info{$db_id} = \@type_info;
                     }
+                    # Calculate the column span
                     my $count = @type_info;
                     $match_count += $count;
                     $count ||= 1;
@@ -603,6 +610,7 @@ sub compare_driver_type_details {
                 my $count = 0;
                 foreach my $detail ( sort { $standard_map->{$a} <=> $standard_map->{$b} } keys %$standard_map ) {
                     my @detail_list;
+                    # Loop through list of configured databases
                     foreach my $db ( @db_list ) {
                         if ( @{ $db_info{$db} } ) {
                             foreach my $type_info ( @{ $db_info{$db} } ) {
@@ -1096,6 +1104,7 @@ sub _get_dbconfig {
     $xml->set( force_array => [ qw( connection ) ] );
     my $db_list = $xml->parsefile( 'db_config.xml' )->{rdbms}->{connection};
 
+    # Load database configuration into a hash
     my $DBCONFIG;
     foreach my $connection ( @$db_list ) {
         if ( $driver ) {
